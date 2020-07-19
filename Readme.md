@@ -16,7 +16,7 @@ tda-nn is a package and set of experiments for analyzing neural networks using T
 ### Code
 The core files for computation of diagrams and landscapes are stored under `tda-nn/`. Experiments, along with experiment specific code is stored under `experiments/*`. 
 
-The basic idea for using tda-nn is to define a PyTorch `nn.Module` class that implements a forward function with the signature `forward(data, n)`, where data is the input data to the module and `n` means get the nth layer activation. To get landscapes at each layer of the network, you would then call `landscape.landscapes_diagrams_from_model(net, data, ...)`. This function will evaluate the network at each layer and use the activations to compute persistence diagrams and landscapes. See `experiments/7112020_mnist/compute_landscapes.py` for a full example. 
+The basic idea for using tda-nn is to define a PyTorch `nn.Module` class that implements a forward function with the signature `forward(data, n)`, where `n` means return the nth layer activation. To get landscapes at each layer of the network, you would then call `landscape.landscapes_diagrams_from_model(net, data, ...)`. This function will evaluate the network at each layer and use the activations to compute persistence diagrams and landscapes. See `experiments/7112020_mnist/compute_landscapes.py` for a full example. 
 
 ### Experiments
 
