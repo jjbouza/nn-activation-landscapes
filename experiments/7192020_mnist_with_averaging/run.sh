@@ -1,4 +1,4 @@
-python3 ./run.py \
+PYTHONPATH=../../tda-nn python3 ./run.py \
     --iterations 16 \
     --batch-size 64 \
     --epochs 1 \
