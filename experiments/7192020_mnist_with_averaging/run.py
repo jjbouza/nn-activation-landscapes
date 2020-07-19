@@ -99,6 +99,8 @@ def main():
     landscape_loader = torch.utils.data.DataLoader(dataset2, batch_size=args.data_samples)
     
     landscapes_per_network = []
+
+    # Train the networks:
     for it in range(args.iterations):
         print('Beginning training of network {}'.format(it))
 
@@ -117,18 +119,8 @@ def main():
 
     # average across networks
     # landscapes_per_network: network x layer x n
+    landscape_averages = average_across_networks(landscapes_per_network)
 
-    landscape_averages = []
-    for layer_it in range(len(landscapes_per_network[0])):
-        landscape_averages_layer = []
-
-        for H_degree_it in range(len(landscapes_per_network[0][0])):
-            landscape_degree_layer = [landscape[layer_it][H_degree_it] for landscape in landscapes_per_network]
-            landscape_averages_layer.append(average(landscape_degree_layer))
-
-        landscape_averages.append(landscape_averages_layer)
-
-    # layer x n x landscape
     if args.save:
         with open(args.save, 'wb') as lfile:
             pickle.dump(landscape_averages, lfile)

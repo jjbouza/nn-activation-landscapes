@@ -36,9 +36,35 @@ def landscapes_diagrams_from_model(net, data, maxdims, thresholds, ns, dx, min_x
 
     return landscapes, diagrams
 
+def average_across_networks(landscapes_per_network):
+    """
+    Inputs: 
+    lanscapes_per_network: networks x layers x degree x landscape_array
+
+    Outputs:
+    landscape_averages: layers x degree x landscape_array
+    """
+    landscape_averages = []
+    for layer_it in range(len(landscapes_per_network[0])):
+        landscape_averages_layer = []
+
+        for H_degree_it in range(len(landscapes_per_network[0][0])):
+            landscape_degree_layer = [landscape[layer_it][H_degree_it] for landscape in landscapes_per_network]
+            landscape_averages_layer.append(average(landscape_degree_layer))
+
+        landscape_averages.append(landscape_averages_layer)
+    
+    return landscape_averages
+
 def average(landscapes):
     """
+    Inputs: 
     landscapes: List[ndarray[levels, samples, 2]]
+
+    Outputs:
+    mean: average landscape array
+
+    Description:
     samples dimension must have same size for all landscapes.
 
     * NOTE: if we have overflow issues here at some point we could do the average differently (divide at each step)
