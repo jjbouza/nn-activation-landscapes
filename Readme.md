@@ -1,6 +1,8 @@
 # tda-nn
 tda-nn is a package and set of experiments for analyzing neural networks using TDA, particularly Persistence Landscapes. 
 
+![Average Landscapes](https://github.com/jjbouza/tda-nn/blob/master/experiments/7192020_mnist_with_averaging/result1.png)
+
 ## Quickstart
 
 ### Dependencies:
