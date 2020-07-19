@@ -3,6 +3,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
+import dill
 
 from model import Net
 
@@ -102,7 +103,7 @@ def main():
         scheduler.step()
 
     if args.save_model:
-        torch.save(model.state_dict(), "mnist_cnn.pt")
+        torch.save(model, "mnist_cnn.pt", pickle_module=dill)
 
 
 if __name__ == '__main__':

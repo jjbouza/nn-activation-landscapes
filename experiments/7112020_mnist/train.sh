@@ -1,5 +1,5 @@
-python3 ../../tda-nn/train.py \
+python3 ./train.py \
     --batch-size 64 \
-    --epochs 5 \
+    --epochs 1 \
     --save-model 
        

@@ -14,16 +14,18 @@ class Net(nn.Module):
         self.conv2 = nn.Conv2d(32, 64, 3, 1)
         self.fc1 = nn.Linear(9216, 128)
         self.fc2 = nn.Linear(128, 10)
+        
+        self.layer1 = nn.Sequential(self.conv1, nn.ReLU())
+        self.layer2 = nn.Sequential(self.conv2, nn.ReLU())
+        self.layer3 = lambda x : torch.flatten(F.max_pool2d(x, 2), 1)
+        self.layer4 = nn.Sequential(self.fc1, nn.ReLU())
+        self.layer5 = self.fc2
 
-        self.layers = [self.conv1,
-                       F.relu,
-                       self.conv2,
-                       F.relu,
-                       lambda x: F.max_pool2d(x, 2),
-                       lambda x: torch.flatten(x, 1),
-                       self.fc1,
-                       F.relu,
-                       self.fc2,
+        self.layers = [self.layer1,
+                       self.layer2,
+                       self.layer3,
+                       self.layer4,
+                       self.layer5,
                        lambda x: F.log_softmax(x, dim=1)]
 
     def forward(self, x, n=None):
