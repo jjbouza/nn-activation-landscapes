@@ -27,7 +27,7 @@ def plot_landscape(landscapes):
         ends.append(end)
 
     start = min(starts)
-    end = max(ends)
+    end = max(ends)+2
 
     for level in landscapes:
         plt.plot(level[:start+end,0], level[:start+end,1])
