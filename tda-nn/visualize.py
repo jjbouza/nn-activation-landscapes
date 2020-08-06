@@ -17,19 +17,20 @@ def indices(arr):
     return first_nz, last_nz
 
 
-def plot_landscape(landscapes):
+def plot_landscape(ax, x_axis, landscapes):
     # landscapes: np.array[levels, points, 2]
     starts = []
     ends = []
     for level in landscapes:
-        start, end = indices(level[:,1])
+        start, end = indices(level)
         starts.append(start)
         ends.append(end)
 
     start = min(starts)
     end = max(ends)+2
+    
 
     for level in landscapes:
-        plt.plot(level[:start+end,0], level[:start+end,1])
+        ax.plot(x_axis[:start+end], level[:start+end])
 
 

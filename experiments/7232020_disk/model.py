@@ -10,10 +10,10 @@ class Net(nn.Module):
     """
     def __init__(self):
         super(Net, self).__init__()
-        self.fc1 = nn.Linear(2, 16)
-        self.fc2 = nn.Linear(16, 32)
-        self.fc3 = nn.Linear(32, 32)
-        self.fc4 = nn.Linear(32, 2)
+        self.fc1 = nn.Linear(2, 8)
+        self.fc2 = nn.Linear(8, 8)
+        self.fc3 = nn.Linear(8, 8)
+        self.fc4 = nn.Linear(8, 2)
 
         self.layer1 = nn.Sequential(self.fc1, nn.ReLU())
         self.layer2 = nn.Sequential(self.fc2, nn.ReLU())

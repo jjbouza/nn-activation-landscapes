@@ -12,44 +12,52 @@ from landscape import *
 import argparse
 import math
 
-def accuracy(input, ground_truth):
-    probs = F.softmax(input, dim=1)
-    labels = torch.argmax(probs, dim=1)
-    return torch.sum(labels == ground_truth)/float(ground_truth.shape[0])
-
-def train(model, device, train_loader, optimizer, epoch, id=0, threshold=math.inf):
+def train(model, device, train_loader, evaluation_loader, optimizer, epoch, id=0, threshold=math.inf):
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
         output = model(data)
         loss = F.cross_entropy(output, target)
+        eval_data = next(iter(evaluation_loader))
+        acc = evaluate_once(model, device, eval_data[0], eval_data[1])
 
-        if accuracy(output, target).item() >= threshold:
-            print("Network {} Status: Early terminated after passing training threshold".format(id))
+        if acc >= threshold:
+            print("Network {} Status: Early terminated after passing training threshold of {} with {}".format(id, threshold, acc))
             return
 
         loss.backward()
         optimizer.step()
 
+def evaluate_once(model, device, data, target):
+    correct = 0
+    data, target = data.to(device), target.to(device)
+    output = model(data)
+    pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
+    correct += pred.eq(target.view_as(pred)).sum().item()
 
-def test(model, device, test_loader, id=0):
+    return correct/data.shape[0]
+
+def evaluate(model, device, data_loader):
     model.eval()
     test_loss = 0
     correct = 0
     with torch.no_grad():
-        for data, target in test_loader:
+        for data, target in data_loader:
             data, target = data.to(device), target.to(device)
             output = model(data)
             test_loss += F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
             pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
             correct += pred.eq(target.view_as(pred)).sum().item()
 
-    test_loss /= len(test_loader.dataset)
+    return correct/len(data_loader.dataset), test_loss/len(data_loader.dataset)
 
-    print('Network {} Status: Test set average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)'.format(
-        id, test_loss, correct, len(test_loader.dataset),
-        100. * correct / len(test_loader.dataset)))
+def test(model, device, test_loader, id=0):
+    accuracy, test_loss = evaluate(model, device, test_loader)
+
+    print('Network {} Status: Test set average loss: {:.4f}, Accuracy: {}/{} ({}%)'.format(
+        id, test_loss, int(accuracy*len(test_loader.dataset)), len(test_loader.dataset),
+        100.*accuracy))
 
 
 def main():
@@ -61,7 +69,7 @@ def main():
                         help='Training accuracy threshold (stop training at this accuracy).')
     parser.add_argument('--batch-size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
-    parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
+    parser.add_argument('--test-batch-size', type=int, default=5000, metavar='N',
                         help='input batch size for testing (default: 1000)')
     parser.add_argument('--epochs', type=int, default=2, metavar='N',
                         help='number of epochs to train (default: 14)')
@@ -103,8 +111,10 @@ def main():
     dataset1, dataset2 = torch.utils.data.random_split(dataset, [dataset.__len__()-args.test_batch_size, args.test_batch_size])
 
     train_loader = torch.utils.data.DataLoader(dataset1,**kwargs)
+    evaluation_loader = torch.utils.data.DataLoader(dataset1, batch_size=args.data_samples, shuffle=True)
+
     test_loader = torch.utils.data.DataLoader(dataset2, **kwargs)
-    landscape_loader = torch.utils.data.DataLoader(dataset2, batch_size=args.data_samples)
+    landscape_loader = torch.utils.data.DataLoader(dataset2, batch_size=args.data_samples, shuffle=True)
     
     landscapes_per_network = []
 
@@ -116,15 +126,15 @@ def main():
         optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
 
         scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
-        training_threshold = args.training_threshold[it] if it <= len(args.training_threshold) else args.training_threshold[-1]
+        training_threshold = args.training_threshold[-1] if it >= len(args.training_threshold) else args.training_threshold[it]
         for epoch in range(1, args.epochs + 1):
-            train(model, device, train_loader, optimizer, epoch, it, training_threshold)
+            train(model, device, train_loader, evaluation_loader, optimizer, epoch, it, training_threshold)
             test(model, device, test_loader, it)
             scheduler.step()
 
         print('Beginning landscape computation for network {}'.format(it))
         data = next(iter(landscape_loader))[0].to(device)
-        landscapes_per_network.append(landscapes_diagrams_from_model(model, data, args.maxdim, args.threshold, args.n, args.dx, args.min_x, args.max_x, it)[0])
+        landscapes_per_network.append(landscapes_diagrams_from_model(model, data, args.maxdim, args.threshold, args.n, args.dx, args.min_x, args.max_x, it, mode='efficient')[0])
 
     # average across networks
     # landscapes_per_network: network x layer x n
