@@ -36,7 +36,6 @@ def evaluate_once(model, device, data, target):
     output = model(data)
     pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
     correct += pred.eq(target.view_as(pred)).sum().item()
-
     return correct/data.shape[0]
 
 def evaluate(model, device, data_loader):
@@ -70,8 +69,6 @@ def main():
                         help='Training accuracy threshold (stop training at this accuracy).')
     parser.add_argument('--batch-size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
-    parser.add_argument('--test-batch-size', type=int, default=5000, metavar='N',
-                        help='input batch size for testing (default: 1000)')
     parser.add_argument('--epochs', type=int, default=2, metavar='N',
                         help='number of epochs to train (default: 14)')
     parser.add_argument('--lr', type=float, default=1.0, metavar='LR',
@@ -111,12 +108,10 @@ def main():
 
     dataset = CSVDataset(args.csv_file)
 
-    dataset1, dataset2 = torch.utils.data.random_split(dataset, [dataset.__len__()-args.test_batch_size, args.test_batch_size])
+    dataset1, dataset2 = torch.utils.data.random_split(dataset, [dataset.__len__()-args.data_samples, args.data_samples])
 
-    train_loader = torch.utils.data.DataLoader(dataset1,**kwargs)
-    evaluation_loader = torch.utils.data.DataLoader(dataset1, batch_size=args.data_samples, shuffle=True)
-
-    test_loader = torch.utils.data.DataLoader(dataset2, **kwargs)
+    train_loader = torch.utils.data.DataLoader(dataset,**kwargs)
+    evaluation_loader = torch.utils.data.DataLoader(dataset, batch_size=args.data_samples, shuffle=True)
     landscape_loader = torch.utils.data.DataLoader(dataset2, batch_size=args.data_samples, shuffle=True)
     
     landscapes_per_network = []
@@ -132,7 +127,6 @@ def main():
         training_threshold = args.training_threshold[-1] if it >= len(args.training_threshold) else args.training_threshold[it]
         for epoch in range(1, args.epochs + 1):
             train(model, device, train_loader, evaluation_loader, optimizer, epoch, it, training_threshold)
-            test(model, device, test_loader, it)
             scheduler.step()
 
         print('Beginning landscape computation for network {}'.format(it))
@@ -148,7 +142,7 @@ def main():
             os.mkdir('./landscapes_csv/')
         for layer_id, layer in enumerate(landscape_averages):
             for dim_id, dim in enumerate(layer):
-                np.savetxt('./landscapes_csv/layer{}dim{}.csv'.format(layer_id, dim_id), dim[1])
+                np.savetxt('./landscapes_csv/layer{}dim{}.csv'.format(layer_id, dim_id), dim[1], delimiter=',')
 
     if args.save:
         with open(args.save, 'wb') as lfile:
