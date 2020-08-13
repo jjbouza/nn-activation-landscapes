@@ -6,7 +6,7 @@ import pickle
 import dill
 import os
 
-from csv_loader import CSVDataset
+from csv_loader import CSVDataset, extract_class
 from model import Net
 from landscape import *
 
@@ -81,6 +81,8 @@ def main():
                         help='how many batches to wait before logging training status')
 
     # diagram and landscape computation settings
+    parser.add_argument('--landscape_class', type=int, default=0,
+                        help='Class of samples to run landscape evaluation on.')
     parser.add_argument('--maxdim', type=int, nargs='+', default=2,
                         help='List of maxdims to compute diagrams and landscapes at for each layer.')  
     parser.add_argument('--threshold', type=float, nargs='+', default=10,
@@ -107,12 +109,11 @@ def main():
     kwargs = {'batch_size': args.batch_size, 'shuffle': True}
 
     dataset = CSVDataset(args.csv_file)
-
-    dataset1, dataset2 = torch.utils.data.random_split(dataset, [dataset.__len__()-args.data_samples, args.data_samples])
+    class_dataset = extract_class(dataset, args.landscape_class)
 
     train_loader = torch.utils.data.DataLoader(dataset,**kwargs)
     evaluation_loader = torch.utils.data.DataLoader(dataset, batch_size=args.data_samples, shuffle=True)
-    landscape_loader = torch.utils.data.DataLoader(dataset2, batch_size=args.data_samples, shuffle=True)
+    landscape_loader = torch.utils.data.DataLoader(class_dataset, batch_size=args.data_samples, shuffle=True)
     
     landscapes_per_network = []
 
