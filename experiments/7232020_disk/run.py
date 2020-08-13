@@ -4,6 +4,7 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import StepLR
 import pickle
 import dill
+import os
 
 from csv_loader import CSVDataset
 from model import Net
@@ -99,6 +100,8 @@ def main():
                         help='max x to sample landscape')  
     parser.add_argument('--save', default=None,
                         help='Save output landscapes to this file')  
+    parser.add_argument('--save_csv', default=True,
+                        help='Save output csv files.')  
 
     args = parser.parse_args()
     torch.manual_seed(args.seed)
@@ -137,8 +140,15 @@ def main():
         landscapes_per_network.append(landscapes_diagrams_from_model(model, data, args.maxdim, args.threshold, args.n, args.dx, args.min_x, args.max_x, it, mode='efficient')[0])
 
     # average across networks
-    # landscapes_per_network: network x layer x n
+    # landscapes_per_network: network x layer x dims
+    # out: layer x dims x landscape
     landscape_averages = average_across_networks(landscapes_per_network)
+    if args.save_csv:
+        if not os.path.exists('./landscapes_csv/'):
+            os.mkdir('./landscapes_csv/')
+        for layer_id, layer in enumerate(landscape_averages):
+            for dim_id, dim in enumerate(layer):
+                np.savetxt('./landscapes_csv/layer{}dim{}.csv'.format(layer_id, dim_id), dim[1])
 
     if args.save:
         with open(args.save, 'wb') as lfile:
