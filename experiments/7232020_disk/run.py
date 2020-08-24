@@ -137,13 +137,20 @@ def main():
     # average across networks
     # landscapes_per_network: network x layer x dims
     # out: layer x dims x landscape
+    def save_landscape(landscape, dirname):
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
+        for layer_id, layer in enumerate(landscape):
+            for dim_id, dim in enumerate(layer):
+                name = os.path.join(dirname, "layer{}dim{}.csv".format(layer_id, dim_id))
+                np.savetxt(name, dim[1], delimiter=',')
+
     landscape_averages = average_across_networks(landscapes_per_network)
     if args.save_csv:
-        if not os.path.exists('./landscapes_csv/'):
-            os.mkdir('./landscapes_csv/')
-        for layer_id, layer in enumerate(landscape_averages):
-            for dim_id, dim in enumerate(layer):
-                np.savetxt('./landscapes_csv/layer{}dim{}.csv'.format(layer_id, dim_id), dim[1], delimiter=',')
+        for landscape_id, landscape in enumerate(landscapes_per_network):
+            save_landscape(landscape, './landscapes_csv/network{}/'.format(landscape_id))
+
+        save_landscape(landscape_averages, './landscapes_csv/average/')
 
     if args.save:
         with open(args.save, 'wb') as lfile:
