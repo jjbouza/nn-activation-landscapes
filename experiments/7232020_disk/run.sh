@@ -3,6 +3,7 @@ PYTHONPATH=../../tda-nn python3 ./run.py \
     --training_threshold 0.8 \
     --batch-size 64 \
     --epochs 2 \
+    --pd_metric SN \
     --maxdim 1 1 1 1 \
     --threshold 100000 100000 100000 100000 \
     --n 0 1 2 3 \

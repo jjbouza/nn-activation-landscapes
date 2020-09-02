@@ -15,12 +15,12 @@ def landscape(diagram, dx=0.1, min_x= 0, max_x=10, threshold=-1):
     """
     if diagram.shape[0] == 0:
         print("WARNING: Empty diagram detected.")
-        return np.zeros([1, math.ceil((max_x-min_x)/dx), 2])
+        return np.zeros([1, math.floor((max_x-min_x)/dx)+1, 2])
     return np.array(landscape.tdatools.landscape_discrete(diagram, dx, min_x, max_x, threshold))
 
 landscape.tdatools = importr('tdatools')
 
-def landscapes_diagrams_from_model(net, data, maxdims, thresholds, ns, dx, min_x, max_x, id=None, mode='normal'):
+def landscapes_diagrams_from_model(net, data, maxdims, thresholds, ns, dx, min_x, max_x, id=None, mode='normal', pd_metric='L2'):
     landscapes = []
     diagrams = []
 
@@ -34,7 +34,7 @@ def landscapes_diagrams_from_model(net, data, maxdims, thresholds, ns, dx, min_x
                     thresh=threshold,
                     verbose=False)
 
-        diagrams_all = compute_diagram_n(net, data, rips, n)
+        diagrams_all = compute_diagram_n(net, data, rips, n, metric=pd_metric)
         diagrams.append(diagrams_all)
         
         def one_x_axies(landscape):

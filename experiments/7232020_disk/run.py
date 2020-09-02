@@ -83,6 +83,8 @@ def main():
     # diagram and landscape computation settings
     parser.add_argument('--landscape_class', type=int, default=0,
                         help='Class of samples to run landscape evaluation on.')
+    parser.add_argument('--pd_metric', type=str, default='L2',
+                        help='Persistence Diagram metric. Options: L2, GG (graph geodesic), SN (scale normalized L2)')
     parser.add_argument('--maxdim', type=int, nargs='+', default=2,
                         help='List of maxdims to compute diagrams and landscapes at for each layer.')  
     parser.add_argument('--threshold', type=float, nargs='+', default=10,
@@ -132,7 +134,17 @@ def main():
 
         print('Beginning landscape computation for network {}'.format(it))
         data = next(iter(landscape_loader))[0].to(device)
-        landscapes_per_network.append(landscapes_diagrams_from_model(model, data, args.maxdim, args.threshold, args.n, args.dx, args.min_x, args.max_x, it, mode='efficient')[0])
+        landscapes_per_network.append(landscapes_diagrams_from_model(model, 
+                                    data, 
+                                    args.maxdim, 
+                                    args.threshold, 
+                                    args.n, 
+                                    args.dx, 
+                                    args.min_x, 
+                                    args.max_x, 
+                                    it, 
+                                    mode='efficient',
+                                    pd_metric=args.pd_metric)[0])
 
     # average across networks
     # landscapes_per_network: network x layer x dims
