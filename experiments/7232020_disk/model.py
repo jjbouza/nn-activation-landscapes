@@ -45,5 +45,6 @@ class Net(nn.Module):
 
         for f in self.layers[:n]:
             x = f(x)
+
         return x
 

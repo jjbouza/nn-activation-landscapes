@@ -52,6 +52,21 @@ def evaluate(model, device, data_loader):
 
     return correct/len(data_loader.dataset), test_loss/len(data_loader.dataset)
 
+def save_activations(model, device, data_loader, dname):
+    os.makedirs(dname, exist_ok=True)
+    model.eval()
+    with torch.no_grad():
+        for i in range(len(model.layers)+1):
+            layer = []
+
+            for data, target in data_loader:
+                data, target = data.to(device), target.to(device)
+                outputi = model(data, i)
+                layer.append(outputi.view(outputi.shape[0], -1))
+            np.savetxt(os.path.join(dname, "layer{}.csv".format(i)), 
+                    torch.cat(layer, dim=0).detach().cpu().numpy(),
+                    delimiter=',')
+
 def test(model, device, test_loader, id=0):
     accuracy, test_loss = evaluate(model, device, test_loader)
 
@@ -131,6 +146,8 @@ def main():
         for epoch in range(1, args.epochs + 1):
             train(model, device, train_loader, evaluation_loader, optimizer, epoch, it, training_threshold)
             scheduler.step()
+        
+        save_activations(model, device, evaluation_loader, "./activations/network{}/".format(it))
 
         print('Beginning landscape computation for network {}'.format(it))
         data = next(iter(landscape_loader))[0].to(device)
