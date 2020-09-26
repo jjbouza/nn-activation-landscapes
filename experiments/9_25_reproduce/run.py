@@ -21,11 +21,11 @@ def train(model, device, train_loader, evaluation_loader, optimizer, epoch, id=0
         optimizer.zero_grad()
         output = model(data)
         loss = F.cross_entropy(output, target)
-        eval_data = next(iter(evaluation_loader))
 
         loss.backward()
         optimizer.step()
     
+    eval_data = next(iter(evaluation_loader))
     acc = evaluate_once(model, device, eval_data[0], eval_data[1])
     return acc
 def evaluate_once(model, device, data, target):
@@ -60,7 +60,7 @@ def save_activations(model, device, data_loader, dname):
             for data, target in data_loader:
                 data, target = data.to(device), target.to(device)
                 outputi = model(data, i)
-                layer.append(outputi.view(outputi.shape[0], -1))
+                layer.append(torch.cat([target[:, None], outputi.view(outputi.shape[0], -1)], dim=1))
             np.savetxt(os.path.join(dname, "layer{}.csv".format(i)), 
                     torch.cat(layer, dim=0).detach().cpu().numpy(),
                     delimiter=',')
@@ -136,19 +136,21 @@ def main():
     for it in range(args.iterations):
         print('Beginning training of network {}'.format(it))
         print('Running on device: {}'.format(device))
+
         model = Net().to(device)
         optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
         training_threshold = args.training_threshold[-1] if it >= len(args.training_threshold) else args.training_threshold[it]
         epochs = tqdm.tqdm(range(1, args.epochs+1))
+        
         for epoch in epochs:
             acc = train(model, device, train_loader, evaluation_loader, optimizer, epoch, it, training_threshold)
+            epochs.set_description('Evaluation Accuracy: {}'.format(acc))
 
             if acc >= training_threshold:
                 print("Network {} Status: Early terminated after passing training threshold of {} with {}".format(it, training_threshold, acc))
                 break
 
-            epochs.set_description('Evaluation Accuracy: {}'.format(acc))
         
         save_activations(model, device, evaluation_loader, "./activations/network{}/".format(it))
 
