@@ -118,11 +118,12 @@ def main():
     parser.add_argument('--save_csv', default=True,
                         help='Save output csv files.')  
 
-    import importlib
-    model_mod = importlib.import_module(args.model_file)
 
     args = parser.parse_args()
     torch.manual_seed(args.seed)
+
+    import importlib
+    model_mod = importlib.import_module(args.model_file)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     kwargs = {'batch_size': args.batch_size, 'shuffle': True}
