@@ -78,6 +78,7 @@ def main():
     # Training settings
     parser.add_argument('--iterations', type=int, default=16)
     parser.add_argument('--csv_file', type=str, default='disk6.csv')
+    parser.add_argument('--model_file', type=str, default='model.py')
     parser.add_argument('--training_threshold', type=float, nargs='+', default=math.inf,
                         help='Training accuracy threshold (stop training at this accuracy).')
     parser.add_argument('--batch-size', type=int, default=1024, metavar='N',
@@ -117,6 +118,9 @@ def main():
     parser.add_argument('--save_csv', default=True,
                         help='Save output csv files.')  
 
+    import importlib
+    model_mod = importlib.import_module(args.model_file)
+
     args = parser.parse_args()
     torch.manual_seed(args.seed)
 
@@ -137,7 +141,7 @@ def main():
         print('Beginning training of network {}'.format(it))
         print('Running on device: {}'.format(device))
 
-        model = Net().to(device)
+        model = model_mod.Net().to(device)
         optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
         training_threshold = args.training_threshold[-1] if it >= len(args.training_threshold) else args.training_threshold[it]
