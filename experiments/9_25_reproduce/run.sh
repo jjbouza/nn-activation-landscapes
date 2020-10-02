@@ -1,6 +1,7 @@
 PYTHONPATH=../../tda-nn python3 ./run.py \
     --iterations 5 \
     --training_threshold 0.99 \
+    --model_file model.py
     --batch-size 1024 \
     --epochs 18000 \
     --pd_metric SN \
