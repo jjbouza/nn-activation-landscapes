@@ -14,41 +14,6 @@ from landscape import *
 import argparse
 import math
 
-def train(model, device, train_loader, evaluation_loader, optimizer, epoch, id=0, threshold=math.inf):
-    model.train()
-    for batch_idx, (data, target) in enumerate(train_loader):
-        data, target = data.to(device), target.to(device)
-        optimizer.zero_grad()
-        output = model(data)
-        loss = F.cross_entropy(output, target)
-
-        loss.backward()
-        optimizer.step()
-    
-    eval_data = next(iter(evaluation_loader))
-    acc = evaluate_once(model, device, eval_data[0], eval_data[1])
-    return acc
-def evaluate_once(model, device, data, target):
-    correct = 0
-    data, target = data.to(device), target.to(device)
-    output = model(data)
-    pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
-    correct += pred.eq(target.view_as(pred)).sum().item()
-    return correct/data.shape[0]
-
-def evaluate(model, device, data_loader):
-    model.eval()
-    test_loss = 0
-    correct = 0
-    with torch.no_grad():
-        for data, target in data_loader:
-            data, target = data.to(device), target.to(device)
-            output = model(data)
-            test_loss += F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
-            pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
-            correct += pred.eq(target.view_as(pred)).sum().item()
-
-    return correct/len(data_loader.dataset), test_loss/len(data_loader.dataset)
 
 def save_activations(model, device, data_loader, dname):
     os.makedirs(dname, exist_ok=True)
@@ -64,13 +29,6 @@ def save_activations(model, device, data_loader, dname):
             np.savetxt(os.path.join(dname, "layer{}.csv".format(i)), 
                     torch.cat(layer, dim=0).detach().cpu().numpy(),
                     delimiter=',')
-
-def test(model, device, test_loader, id=0):
-    accuracy, test_loss = evaluate(model, device, test_loader)
-
-    print('Network {} Status: Test set average loss: {:.4f}, Accuracy: {}/{} ({}%)'.format(
-        id, test_loss, int(accuracy*len(test_loader.dataset)), len(test_loader.dataset),
-        100.*accuracy))
 
 
 def main():
@@ -120,14 +78,11 @@ def main():
     args = parser.parse_args()
     torch.manual_seed(args.seed)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     kwargs = {'batch_size': args.batch_size, 'shuffle': True}
-
     dataset = CSVDataset(args.csv_file)
     class_dataset = extract_class(dataset, args.landscape_class)
 
     train_loader = torch.utils.data.DataLoader(dataset,**kwargs)
-    evaluation_loader = torch.utils.data.DataLoader(dataset,batch_size=args.data_samples, shuffle=True)
     landscape_loader = torch.utils.data.DataLoader(class_dataset, batch_size=args.data_samples, shuffle=True)
     
     landscapes_per_network = []

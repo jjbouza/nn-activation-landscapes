@@ -1,7 +1,11 @@
 import numpy as np
 import sys
+import matplotlib as mpl
+mpl.use('Agg')
 from matplotlib import pyplot as plt
 from persim import visuals
+
+from sklearn.decomposition import PCA
 
 def indices(arr):
     first_nz = len(arr)
@@ -28,9 +32,22 @@ def plot_landscape(ax, x_axis, landscapes):
 
     start = min(starts)
     end = max(ends)+2
-    
 
     for level in landscapes:
         ax.plot(x_axis[:start+end], level[:start+end])
 
+def plot_graph(data, adjacency_matrix, save=None):
+    # run PCA on data
+    plt.clf()
+    pca = PCA(n_components=2)
+    new_data = pca.fit_transform(data)
+    plt.scatter(new_data[:,0], new_data[:,1])
+    for i in range(adjacency_matrix.shape[0]):
+        for j in range(adjacency_matrix.shape[1]):
+            if adjacency_matrix[i, j] == 1:
+                plt.plot((new_data[i, 0], new_data[j, 0]), (new_data[i, 1], new_data[j, 1]))
 
+    if save is None:
+        plt.show()
+    else:
+        plt.savefig(save)

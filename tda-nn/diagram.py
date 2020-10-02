@@ -2,11 +2,11 @@ import warnings
 from ripser import Rips
 import numpy as np
 
+import visualize
 # some useful computational geometry tools
 from sklearn.neighbors import NearestNeighbors
 import sklearn.utils.graph_shortest_path as gp
 import scipy.spatial
-
 
 def compute_diagram(data, rips, metric='L2', k=10):
     # compute and return diagram
@@ -19,8 +19,10 @@ def compute_diagram(data, rips, metric='L2', k=10):
         if metric == 'L2':
             pd = rips.fit_transform(samples)
         elif metric == 'GG' or metric == 'graph geodesic':
-            graph_geodesic_dm = graph_geodesic_metric(samples, k)
-            pd = rips.fit_transform(graph_geodesic_dm, distance_matrix=True)
+            adjacency_matrix = graph_geodesic_adjacency(samples, k)
+            graph_geodesic_dm = graph_geodesic_metric(adjacency_matrix)
+            #visualize.plot_graph(samples, adjacency_matrix, save="./activation_visualizations/{}.png".format(id))
+            #pd = rips.fit_transform(graph_geodesic_dm, distance_matrix=True)
         elif metric == 'SN' or metric == 'scale normalized':
             normalized_data = scale_normalize(samples)
             pd = rips.fit_transform(samples)
@@ -39,17 +41,18 @@ def compute_diagram_all(model, data, rips):
     diagrams = [compute_diagram(activation, rips) for activation in activations]
     return diagrams
 
-def graph_geodesic_metric(data, k=5):
+def graph_geodesic_adjacency(data, k=5):
+    nbrs = NearestNeighbors(n_neighbors=k, algorithm='ball_tree').fit(data)
+    adjacency_matrix = nbrs.kneighbors_graph(data).toarray()
+    return adjacency_matrix
+
+def graph_geodesic_metric(adjacency_matrix):
     '''
     Input: Point Cloud - [N, d]
     Output: Graph geodesic distance matrix: [N, N]
     '''
-    nbrs = NearestNeighbors(n_neighbors=k, algorithm='ball_tree').fit(data)
-    adjacency_matrix = nbrs.kneighbors_graph(data).toarray()
-    distance_matrix = gp.graph_shortest_path(adjacency_matrix, method='auto', directed=False)
-    print(distance_matrix)
+    distance_matrix = gp.graph_shortest_path(adjacency_matrix, directed=False, method='auto')
     return distance_matrix
-
 
 def scale_normalize(data, p=2):
     distance_matrix = scipy.spatial.distance_matrix(data, data, p)

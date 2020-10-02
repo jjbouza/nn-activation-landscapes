@@ -9,6 +9,8 @@ from rpy2.robjects.packages import importr
 from rpy2.robjects import numpy2ri
 numpy2ri.activate()
 
+landscape.tdatools = importr('tdatools')
+
 def landscape(diagram, dx=0.1, min_x= 0, max_x=10, threshold=-1):
     """
     Simple interface to tda-tools for DISCRETE landscapes.
@@ -18,18 +20,19 @@ def landscape(diagram, dx=0.1, min_x= 0, max_x=10, threshold=-1):
         return np.zeros([1, math.floor((max_x-min_x)/dx)+1, 2])
     return np.array(landscape.tdatools.landscape_discrete(diagram, dx, min_x, max_x, threshold))
 
-landscape.tdatools = importr('tdatools')
-
-def landscapes_diagrams_from_model(net, data, maxdims, thresholds, ns, dx, min_x, max_x, id=None, mode='normal', pd_metric='L2'):
+def landscapes_diagrams_from_model(net, 
+                                   data, 
+                                   maxdims, 
+                                   thresholds, 
+                                   ns, 
+                                   dx, 
+                                   min_x, 
+                                   max_x, 
+                                   pd_metric='L2'):
     landscapes = []
     diagrams = []
 
     for maxdim, threshold, n in zip(maxdims, thresholds, ns):
-        if id is None:
-            print("Processing layer {} with {} dimensions and threshold of {}".format(n, maxdim, threshold))
-        else:
-            print("Network {} Status: Processing layer {} with {} dimensions and threshold of {}".format(id, n, maxdim, threshold))
-
         rips = Rips(maxdim=maxdim,
                     thresh=threshold,
                     verbose=False)
@@ -37,16 +40,12 @@ def landscapes_diagrams_from_model(net, data, maxdims, thresholds, ns, dx, min_x
         diagrams_all = compute_diagram_n(net, data, rips, n, metric=pd_metric)
         diagrams.append(diagrams_all)
         
-        def one_x_axies(landscape):
+        def one_x_axis(landscape):
             x_axis = landscape[0,:,0]
             y_axis = landscape[:,:,1]
-
             return (x_axis, y_axis)
-        if mode == 'normal':
-            landscapes_layer = [landscape(diag, dx, min_x, max_x) for diag in diagrams_all]
-        elif mode == 'efficient':
-            landscapes_layer = [one_x_axies(landscape(diag, dx, min_x, max_x)) for diag in diagrams_all]
 
+        landscapes_layer = [one_x_axis(landscape(diag, dx, min_x, max_x)) for diag in diagrams_all]
         landscapes.append(landscapes_layer)
 
     return landscapes, diagrams
