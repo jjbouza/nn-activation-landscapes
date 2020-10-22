@@ -36,6 +36,7 @@ def landscapes_diagrams_from_model(net,
                                    min_x, 
                                    max_x, 
                                    pd_metric='L2',
+                                   k=12,
                                    activations_dirname='./activations_visualizations'):
     landscapes = []
     diagrams = []
@@ -47,7 +48,7 @@ def landscapes_diagrams_from_model(net,
         if (data != data).any():
             warning("WARNING: NaN encountered")
 
-        diagrams_all = compute_diagram_n(net, data, rips, n, metric=pd_metric, dirname=activations_dirname)
+        diagrams_all = compute_diagram_n(net, data, rips, n, metric=pd_metric, dirname=activations_dirname, k=k)
         diagrams.append(diagrams_all)
         
         def one_x_axis(landscape):

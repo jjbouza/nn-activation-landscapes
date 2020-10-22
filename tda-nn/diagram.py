@@ -36,16 +36,16 @@ def compute_diagram(data, rips, id, metric='L2', k=12):
 
     return pd
 
-def compute_diagram_n(model, data, rips, n, metric, dirname='./activation_visualizations/'):    
+def compute_diagram_n(model, data, rips, n, metric, k=12, dirname='./activation_visualizations/'):    
     mod = model.module_.to('cpu')
     xn = mod(data, n)
 
     if not os.path.exists("{}/network{}/".format(dirname, model.id)):
         os.makedirs("{}/network{}/".format(dirname, model.id))
 
-    return compute_diagram(xn, rips, "{}/network{}/layer{}.png".format(dirname, model.id, n), metric=metric)
+    return compute_diagram(xn, rips, "{}/network{}/layer{}.png".format(dirname, model.id, n), metric=metric, k=k)
 
-def graph_geodesic_adjacency(data, k=5):
+def graph_geodesic_adjacency(data, k=12):
     nbrs = NearestNeighbors(n_neighbors=k, algorithm='ball_tree').fit(data)
     adjacency_matrix = nbrs.kneighbors_graph(data).toarray()
     return adjacency_matrix

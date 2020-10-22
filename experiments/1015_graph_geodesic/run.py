@@ -41,6 +41,7 @@ def generate_cli_parser():
     # diagram and landscape computation settings
     parser.add_argument('--diagram-metric', type=str, default='L2',
                         help='Persistence Diagram metric. Options: L2, GG (graph geodesic), SN (scale normalized L2)')
+    parser.add_argument('--nn-graph-k', type=int, default=12)
     parser.add_argument('--max-diagram-dimension', type=int, nargs='+', default=2,
                         help='List of maxdims to compute diagrams and landscapes at for each layer.')  
     parser.add_argument('--diagram-threshold', type=float, nargs='+', default=10,
@@ -137,6 +138,7 @@ def main(args):
                                                                 min_x=args.landscape_min_x,
                                                                 max_x=args.landscape_max_x,
                                                                 pd_metric=args.diagram_metric,
+                                                                k=args.nn_graph_k,
                                                                 activations_dirname=os.path.join(args.output_folder, './activations_visualizations/'))
             if args.save_diagram_plots:
                 status("STATUS: Saving diagram plots for network {}".format(network_id))

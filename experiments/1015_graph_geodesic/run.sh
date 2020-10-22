@@ -10,6 +10,7 @@ if [ $# -gt 0 ]; then
         --max-epochs 8000 \
         --learning-rate 0.01 \
         --diagram-metric GG \
+        --nn-graph-k 12 \
         --max-diagram-dimension 1 1 1 1 1 1 1 1 1 1 1 1\
         --diagram-threshold 100000 100000 100000 100000 100000 100000 100000 100000 100000 100000 100000 100000\
         --persistence-layers 0 1 2 3 4 5 6 7 8 9 10 11\
