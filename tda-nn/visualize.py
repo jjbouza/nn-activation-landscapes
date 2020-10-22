@@ -1,9 +1,10 @@
 import numpy as np
 import sys
+import os
 import matplotlib as mpl
 mpl.use('Agg')
 from matplotlib import pyplot as plt
-from persim import visuals
+from persim import visuals, plot_diagrams
 
 from sklearn.decomposition import PCA
 
@@ -20,8 +21,28 @@ def indices(arr):
 
     return first_nz, last_nz
 
+def save_diagram_plots(diagrams, dirname):
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
 
-def plot_landscape(ax, x_axis, landscapes):
+    fig, ax = plt.subplots()  # Create a figure and an axes.
+    for layer, diagram in enumerate(diagrams):
+        plot_diagrams(diagram, show=False, ax=ax)
+        fig.savefig(os.path.join(dirname, 'layer{}.png'.format(layer)))
+        plt.cla()
+
+def save_landscape_plots(landscapes, dirname):
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+
+    fig, ax = plt.subplots()  # Create a figure and an axes.
+    for layer, landscape_ in enumerate(landscapes):
+        for homology, landscape in enumerate(landscape_):
+            plot_landscape(landscape[1], landscape[0], ax=ax)
+            fig.savefig(os.path.join(dirname, 'layer{}degree{}'.format(layer, homology)))
+            plt.cla()
+
+def plot_landscape(landscapes, x_axis, ax):
     # landscapes: np.array[levels, points, 2]
     starts = []
     ends = []
