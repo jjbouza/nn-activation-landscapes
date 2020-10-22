@@ -55,16 +55,16 @@ The 1015_graph_geodesic experiment is extremely versatile. Here is part of the e
 
 The relevant arguments are described below:
 
---output_folder: Base directory for saving experiment output data. 
---model: Name of model file. For example, `--model my_model` means import the network from my_model.py
---network-count: Number of networks to train and compute landscapes on.
---training-threshold: Stop training when training set accuracy reaches this level.
---batch-size: Batch size for training.
---max_epochs: Max number of epochs to train a network. If network training accuracy is below the specified training threshold and --ignore-failed is not set then this network will not count towards the --network-count (i.e. a new network will be initialized and attempted to be trained to the specified training threshold).
---learning-rate: Training learning rate (an Adam optimizer is used internally).
---diagram_metric: Persistence Diagram metric. Options: L2, GG (graph geodesic), SN (scale normalized L2). GG is recommended. 
---max-diagram-dimension: Max dimension to compute homology in for each of the networks for each layer of network.
---diagram-threshold: Persistence threshold for each layer of network.
---persistence-layers: Layers to compute persistence at. The number of elements in this argument should match the previous two.
---persistence-data-samples: Number of data samples to run persistence algorithm on (a subset of the full dataset).
---persistence-class: When computing activation homology, we sometimes want to only compute homology for activations that come from a certain class. This class can be specified here. To do both classes set this to -1. 
+- **--output_folder:** Base directory for saving experiment output data. 
+- **--model:** Name of model file. For example, `--model my_model` means import the network from `my_model.py`
+- **--network-count:** Number of networks to train and compute landscapes on.
+- **--training-threshold:** Stop training when training set accuracy reaches this level.
+- **--batch-size:** Batch size for training.
+- **--max_epochs:** Max number of epochs to train a network. If network training accuracy is below the specified training threshold and `--ignore-failed` is not set then this network will not count towards the `--network-count` (i.e. a new network will be initialized and attempted to be trained to the specified training threshold).
+- **--learning-rate:** Training learning rate (an Adam optimizer is used internally).
+- **--diagram_metric:** Persistence Diagram metric. Options: L2, GG (graph geodesic), SN (scale normalized L2). GG is recommended. 
+- **--max-diagram-dimension:** Max dimension to compute homology in for each of the networks for each layer of network.
+- **--diagram-threshold:** Persistence threshold for each layer of network.
+- **--persistence-layers:** Layers to compute persistence at. The number of elements in this argument should match the previous two.
+- **--persistence-data-samples:** Number of data samples to run persistence algorithm on (a subset of the full dataset).
+- **--persistence-class:** When computing activation homology, we sometimes want to only compute homology for activations that come from a certain class. This class can be specified here. To do both classes set this to -1. 
