@@ -6,27 +6,18 @@ from ripser import Rips
 
 class Net(nn.Module):
     """
-    Simple classifier.
+    MLP for simple classification task.
     """
     def __init__(self):
         super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(1, 32, 3, 1)
-        self.conv2 = nn.Conv2d(32, 64, 3, 1)
-        self.fc1 = nn.Linear(9216, 128)
-        self.fc2 = nn.Linear(128, 10)
-        
-        self.layer1 = nn.Sequential(self.conv1, nn.ReLU())
-        self.layer2 = nn.Sequential(self.conv2, nn.ReLU())
-        self.layer3 = lambda x : torch.flatten(F.max_pool2d(x, 2), 1)
-        self.layer4 = nn.Sequential(self.fc1, nn.ReLU())
-        self.layer5 = self.fc2
+        self.fc_first = nn.Linear(2, 15)
+        self.middle_fc = [nn.Linear(15, 15) for _ in range(9)]
+        self.fc_last = nn.Linear(15, 2)
 
-        self.layers = [self.layer1,
-                       self.layer2,
-                       self.layer3,
-                       self.layer4,
-                       self.layer5,
-                       lambda x: F.log_softmax(x, dim=1)]
+        self.fc_layers = [self.fc_first]+self.middle_fc
+        self.layers = nn.ModuleList([nn.Sequential(fc_layer, nn.ReLU()) for fc_layer in
+                                     self.fc_layers]+[self.fc_last])
+
 
     def forward(self, x, n=None):
         """
@@ -36,18 +27,17 @@ class Net(nn.Module):
 
         NOTE: TO WORK WITH TDA-NN THE FORWARD FUNCTION OF YOUR MODEL MUST ACCEPT THE 'n' PARAMATER.
         """
-
         if n == 'all':
             activation_list = [x]
-            for f in self.layers[:n]:
+            for f in self.layers:
                 activation_list.append(f(activation_list[-1]))
             return activation_list
 
         if n == None:
             n = len(self.layers)
-
+        
         for f in self.layers[:n]:
             x = f(x)
-        return x
 
+        return x
 

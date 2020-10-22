@@ -1,52 +1,62 @@
 import numpy as np
 from diagram import compute_diagram_n
 from ripser import Rips
+from utils import *
 
 import math
+import os
+import re
 
-import rpy2
-from rpy2.robjects.packages import importr
-from rpy2.robjects import numpy2ri
-numpy2ri.activate()
+# import Rpy modules and ignore warnings...
+import warnings 
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    import rpy2
+    from rpy2.robjects.packages import importr
+    from rpy2.robjects import numpy2ri
+    numpy2ri.activate()
+
 
 def landscape(diagram, dx=0.1, min_x= 0, max_x=10, threshold=-1):
     """
     Simple interface to tda-tools for DISCRETE landscapes.
     """
     if diagram.shape[0] == 0:
-        print("WARNING: Empty diagram detected.")
+        warning("WARNING: Empty diagram detected")
         return np.zeros([1, math.floor((max_x-min_x)/dx)+1, 2])
     return np.array(landscape.tdatools.landscape_discrete(diagram, dx, min_x, max_x, threshold))
-
 landscape.tdatools = importr('tdatools')
 
-def landscapes_diagrams_from_model(net, data, maxdims, thresholds, ns, dx, min_x, max_x, id=None, mode='normal', pd_metric='L2'):
+def landscapes_diagrams_from_model(net, 
+                                   data, 
+                                   maxdims, 
+                                   thresholds, 
+                                   ns, 
+                                   dx, 
+                                   min_x, 
+                                   max_x, 
+                                   pd_metric='L2',
+                                   k=12,
+                                   activations_dirname='./activations_visualizations'):
     landscapes = []
     diagrams = []
-
     for maxdim, threshold, n in zip(maxdims, thresholds, ns):
-        if id is None:
-            print("Processing layer {} with {} dimensions and threshold of {}".format(n, maxdim, threshold))
-        else:
-            print("Network {} Status: Processing layer {} with {} dimensions and threshold of {}".format(id, n, maxdim, threshold))
-
         rips = Rips(maxdim=maxdim,
                     thresh=threshold,
                     verbose=False)
+        
+        if (data != data).any():
+            warning("WARNING: NaN encountered")
 
-        diagrams_all = compute_diagram_n(net, data, rips, n, metric=pd_metric)
+        diagrams_all = compute_diagram_n(net, data, rips, n, metric=pd_metric, dirname=activations_dirname, k=k)
         diagrams.append(diagrams_all)
         
-        def one_x_axies(landscape):
+        def one_x_axis(landscape):
             x_axis = landscape[0,:,0]
             y_axis = landscape[:,:,1]
-
             return (x_axis, y_axis)
-        if mode == 'normal':
-            landscapes_layer = [landscape(diag, dx, min_x, max_x) for diag in diagrams_all]
-        elif mode == 'efficient':
-            landscapes_layer = [one_x_axies(landscape(diag, dx, min_x, max_x)) for diag in diagrams_all]
-
+        
+        landscapes_layer = [one_x_axis(landscape(diag, dx, min_x, max_x)) for diag in diagrams_all]
         landscapes.append(landscapes_layer)
 
     return landscapes, diagrams
@@ -94,3 +104,37 @@ def average(landscapes):
         mean += np.pad(landscape[1], ((0, max_levels-landscape[1].shape[0]), (0,0)) )
 
     return landscapes[0][0], mean/len(landscapes)
+
+def load_landscape(dirname):
+    max_layer, max_dim = 0, 0
+    for landscape_fname in os.listdir(dirname):
+        matches = re.findall("\d+", landscape_fname)
+        layer, dim = int(matches[0]), int(matches[1])
+        if max_layer < layer:
+            max_layer = layer
+        if max_dim < dim:
+            max_dim = dim
+
+    landscapes = [[None for _ in range(max_dim+1)] for _ in range(max_layer+1)]
+    for landscape_fname in os.listdir(dirname):
+        matches = re.findall("\d+", landscape_fname)
+        layer, dim = int(matches[0]), int(matches[1])
+        landscape = np.loadtxt(os.path.join(dirname, landscape_fname), delimiter=',')
+        landscapes[layer][dim] = landscape
+
+    return landscapes
+
+def average_from_disk(dirname):
+    mean = np.zeroes([0,0])
+    for network_dir in os.listdir(dirname):
+        network_landscapes = load_landscape(os.path.join(dirname, network_dir))
+        max_levels = max([l.shape[0] for z in network_landscapes for l in z])
+
+
+def save_landscape(landscape, dirname):
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+    for layer_id, layer in enumerate(landscape):
+        for dim_id, dim in enumerate(layer):
+            name = os.path.join(dirname, "layer{}dim{}.csv".format(layer_id, dim_id))
+            np.savetxt(name, dim[1], delimiter=',')
