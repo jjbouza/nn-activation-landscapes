@@ -30,6 +30,7 @@ def save_diagram_plots(diagrams, dirname):
         plot_diagrams(diagram, show=False, ax=ax)
         fig.savefig(os.path.join(dirname, 'layer{}.png'.format(layer)))
         plt.cla()
+    plt.close('all')
 
 def save_landscape_plots(landscapes, dirname):
     if not os.path.exists(dirname):
@@ -41,6 +42,7 @@ def save_landscape_plots(landscapes, dirname):
             plot_landscape(landscape[1], landscape[0], ax=ax)
             fig.savefig(os.path.join(dirname, 'layer{}degree{}'.format(layer, homology)))
             plt.cla()
+    plt.close('all')
 
 def plot_landscape(landscapes, x_axis, ax):
     # landscapes: np.array[levels, points, 2]
