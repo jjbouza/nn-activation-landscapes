@@ -1,8 +1,6 @@
 # tda-nn
 tda-nn is a package and set of experiments for analyzing neural networks using TDA, particularly Persistence Landscapes. 
 
-![Average Landscapes](https://github.com/jjbouza/tda-nn/blob/master/experiments/7192020_mnist_with_averaging/result1.png)
-
 ## Quickstart
 
 ### Dependencies:
@@ -13,6 +11,7 @@ tda-nn is a package and set of experiments for analyzing neural networks using T
 - ripser (`pip3 install ripser`)
 - rpy2 (`pip3 install rpy2`)
 - PyTorch (`pip3 install torch torchvision` or see [here](https://pytorch.org/get-started/locally/) for GPU)
+- Skorch(`pip3 install skorch`)
 
 ### Code
 The core library files for computation of diagrams and landscapes are stored under `tda-nn/`. Experiments, along with experiment specific code is stored under `experiments/*`. 
