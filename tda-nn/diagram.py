@@ -1,7 +1,7 @@
 import warnings
 import os
 
-from ripser import Rips
+from ripser import ripser
 import numpy as np
 
 import visualize
@@ -12,38 +12,49 @@ import scipy.spatial
 
 from utils import *
 
-def compute_diagram(data, rips, id, metric='L2', k=12):
+def compute_diagrams(data, maxdims, thresholds, metric='L2', k=12, save_GG_activations_plots=None):
+    if save_GG_activations_plots is not None:
+        if not os.path.exists(save_GG_activations_plots):
+            os.makedirs(save_GG_activations_plots)
+
+    diagrams = []
+    for id, (activation, dim, threshold) in enumerate(zip(data, maxdims, thresholds)):
+        act_plot = None if save_GG_activations_plots is None else os.path.join(save_GG_activations_plots, 'layer{}.png'.format(id))
+        diag = compute_diagram(activation, 
+                               dim, 
+                               threshold, 
+                               metric=metric, 
+                               k=k,
+                               save_GG_activations_plots=act_plot)
+        diagrams.append(diag)
+
+    return diagrams
+
+def compute_diagram(data, maxdim, threshold, metric='L2', k=12, save_GG_activations_plots=None):
     # compute and return diagram
     data_cpu = data.cpu().detach().numpy()
-    samples = data_cpu.reshape(data.shape[0], -1)
+    X = data_cpu.reshape(data.shape[0], -1)
 
     with warnings.catch_warnings():
         # supress ripser warnings
         warnings.simplefilter("ignore")
         if metric == 'L2':
-            pd = rips.fit_transform(samples)
+            pd = ripser(X, maxdim, threshold)['dgms']
         elif metric == 'GG' or metric == 'graph geodesic':
-            adjacency_matrix = graph_geodesic_adjacency(samples, k)
+            adjacency_matrix = graph_geodesic_adjacency(X, k)
             graph_geodesic_dm = graph_geodesic_metric(adjacency_matrix)
-            visualize.plot_graph(samples, adjacency_matrix, save=id)
-            pd = rips.fit_transform(graph_geodesic_dm, distance_matrix=True)
+            if save_GG_activations_plots is not None:
+                visualize.plot_graph(X, adjacency_matrix, save=save_GG_activations_plots)
+
+            pd = ripser(graph_geodesic_dm, maxdim, threshold, distance_matrix=True)['dgms']
         elif metric == 'SN' or metric == 'scale normalized':
-            normalized_data = scale_normalize(samples)
-            pd = rips.fit_transform(samples)
+            normalized_X = scale_normalize(X)
+            pd = ripser(X, maxdim, threshold)['dgms']
         else:
             error("Error: Unknown metric: ".format(metric))
             quit()
 
     return pd
-
-def compute_diagram_n(model, data, rips, n, metric, k=12, dirname='./activation_visualizations/'):    
-    mod = model.module_.to('cpu')
-    xn = mod(data, n)
-
-    if not os.path.exists("{}/network{}/".format(dirname, model.id)):
-        os.makedirs("{}/network{}/".format(dirname, model.id))
-
-    return compute_diagram(xn, rips, "{}/network{}/layer{}.png".format(dirname, model.id, n), metric=metric, k=k)
 
 def graph_geodesic_adjacency(data, k=12):
     nbrs = NearestNeighbors(n_neighbors=k, algorithm='ball_tree').fit(data)

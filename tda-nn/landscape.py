@@ -7,6 +7,19 @@ import math
 import os
 import re
 
+#from gudhi.representations.vector_methods import Landscape
+
+#def landscape(diagram, dx=0.1, min_x= 0, max_x=10, threshold=-1):
+#    """
+#    Simple interface to tda-tools for DISCRETE landscapes.
+#    """
+#    landscape = Landscape(num_landscapes=diagram.shape[0], resolution=1//dx)
+#
+#    if diagram.shape[0] == 0:
+#        warning("WARNING: Empty diagram detected")
+#        return np.zeros([1, math.floor((max_x-min_x)/dx)+1, 2])
+#    return landscape(diagram)
+
 # import Rpy modules and ignore warnings...
 import warnings 
 with warnings.catch_warnings():
@@ -16,50 +29,34 @@ with warnings.catch_warnings():
     from rpy2.robjects import numpy2ri
     numpy2ri.activate()
 
+def compute_landscapes(diagrams, dx=0.1, min_x=0, max_x=10, thresholds=None):
+    def one_x_axis(landscape):
+        x_axis = landscape[0,:,0]
+        y_axis = landscape[:,:,1]
+        return (x_axis, y_axis)
 
-def landscape(diagram, dx=0.1, min_x= 0, max_x=10, threshold=-1):
+    if thresholds is None:
+        thresholds = [-1 for _ in diagrams]
+    
+    landscapes = []
+    for diagram, threshold in zip(diagrams, thresholds):
+        landscape_layer = []
+        for diagram_dim in diagram:
+            landscape = compute_landscape(diagram_dim, dx, min_x, max_x, threshold)
+            landscape_layer.append(one_x_axis(landscape))
+        landscapes.append(landscape_layer)
+
+    return landscapes
+
+def compute_landscape(diagram, dx=0.1, min_x= 0, max_x=10, threshold=-1):
     """
     Simple interface to tda-tools for DISCRETE landscapes.
     """
     if diagram.shape[0] == 0:
         warning("WARNING: Empty diagram detected")
         return np.zeros([1, math.floor((max_x-min_x)/dx)+1, 2])
-    return np.array(landscape.tdatools.landscape_discrete(diagram, dx, min_x, max_x, threshold))
-landscape.tdatools = importr('tdatools')
-
-def landscapes_diagrams_from_model(net, 
-                                   data, 
-                                   maxdims, 
-                                   thresholds, 
-                                   ns, 
-                                   dx, 
-                                   min_x, 
-                                   max_x, 
-                                   pd_metric='L2',
-                                   k=12,
-                                   activations_dirname='./activations_visualizations'):
-    landscapes = []
-    diagrams = []
-    for maxdim, threshold, n in zip(maxdims, thresholds, ns):
-        rips = Rips(maxdim=maxdim,
-                    thresh=threshold,
-                    verbose=False)
-        
-        if (data != data).any():
-            warning("WARNING: NaN encountered")
-
-        diagrams_all = compute_diagram_n(net, data, rips, n, metric=pd_metric, dirname=activations_dirname, k=k)
-        diagrams.append(diagrams_all)
-        
-        def one_x_axis(landscape):
-            x_axis = landscape[0,:,0]
-            y_axis = landscape[:,:,1]
-            return (x_axis, y_axis)
-        
-        landscapes_layer = [one_x_axis(landscape(diag, dx, min_x, max_x)) for diag in diagrams_all]
-        landscapes.append(landscapes_layer)
-
-    return landscapes, diagrams
+    return np.array(compute_landscape.tdatools.landscape_discrete(diagram, dx, min_x, max_x, threshold))
+compute_landscape.tdatools = importr('tdatools')
 
 def average_across_networks(landscapes_per_network):
     """
