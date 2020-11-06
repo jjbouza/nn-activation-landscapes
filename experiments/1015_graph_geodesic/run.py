@@ -13,11 +13,14 @@ from skorch.callbacks import EpochScoring, LRScheduler
 from train.callbacks import TrainingThreshold
 from train.extract_data import extract_data
 from train.utils import save_activations
-from landscape import landscapes_diagrams_from_model, save_landscape, average_from_disk
-from diagram import save_diagram
+from activations import compute_activations
+from landscape import compute_landscapes, save_landscape
+from diagram import compute_diagrams, save_diagram
 from visualize import save_diagram_plots, save_landscape_plots
 
 from utils import status
+
+import time
 
 def generate_cli_parser():
     parser = argparse.ArgumentParser(description='PyTorch landscape computations')
@@ -83,22 +86,6 @@ def main(args):
     dataset = CSVDataset(args.csv_file)
     y_train = np.array([y for X, y in iter(dataset)])
 
-    # Prepare training callback
-    training_accuracy = EpochScoring('accuracy',
-                                     lower_is_better=False,
-                                     on_train=True,
-                                     name='Training_Accuracy')
-    test_accuracy = EpochScoring('accuracy',
-                                 lower_is_better=False,
-                                 on_train=False,
-                                 name='Test_Accuracy')
-
-    training_threshold = TrainingThreshold(training_threshold=args.training_threshold,
-                                           on_training=True)
-
-    callbacks = [training_accuracy,
-                 test_accuracy,
-                 training_threshold]
 
     print("Network: {}".format(network()))
     print("Dataset Samples: {}".format(len(dataset)))
@@ -107,6 +94,23 @@ def main(args):
     while network_id <= args.network_count:
         status('STATUS: Beginning training of network {}'.format(network_id))
         print('Running on device: {}'.format(device))
+
+        # Prepare training callback
+        training_accuracy = EpochScoring('accuracy',
+                                         lower_is_better=False,
+                                         on_train=True,
+                                         name='Training_Accuracy')
+        test_accuracy = EpochScoring('accuracy',
+                                     lower_is_better=False,
+                                     on_train=False,
+                                     name='Test_Accuracy')
+
+        training_threshold = TrainingThreshold(training_threshold=args.training_threshold,
+                                               on_training=True)
+
+        callbacks = [training_accuracy,
+                     test_accuracy,
+                     training_threshold]
         
         # initalize the network
         net = NeuralNetClassifier(
@@ -126,20 +130,39 @@ def main(args):
         net.fit(X=dataset, y=y_train)
 
         if net.history[-1, 'Training_Accuracy'] >= args.training_threshold or args.ignore_failed == False:
-            status('STATUS: Starting landscape computation for network {}'.format(network_id))
+            status('STATUS: Starting persistence computation for network {}'.format(network_id))
             landscape_data = extract_data(dataset, args.persistence_data_samples, args.persistence_class)
             # compute landscape statistics
-            landscapes, diagrams = landscapes_diagrams_from_model(net,
-                                                                landscape_data,
-                                                                maxdims=args.max_diagram_dimension,
-                                                                thresholds=args.diagram_threshold,
-                                                                ns=args.persistence_layers,
-                                                                dx=args.landscape_dx,
-                                                                min_x=args.landscape_min_x,
-                                                                max_x=args.landscape_max_x,
-                                                                pd_metric=args.diagram_metric,
-                                                                k=args.nn_graph_k,
-                                                                activations_dirname=os.path.join(args.output_folder, './activations_visualizations/'))
+
+            status("STATUS: Computing activations for network {}".format(network_id))
+            start = time.time()
+            activations = compute_activations(net, 
+                                              landscape_data,
+                                              layers=args.persistence_layers)
+            end = time.time()
+            status("STATUS: Done computing activations for network {}. Time elapsed: {}".format(network_id, end-start))
+            
+            status("STATUS: Computing diagrams for network {}".format(network_id))
+            start = time.time()
+            diagrams = compute_diagrams(activations, 
+                                      maxdims=args.max_diagram_dimension,
+                                      thresholds=args.diagram_threshold,
+                                      metric=args.diagram_metric,
+                                      k=args.nn_graph_k,
+                                      save_GG_activations_plots=os.path.join(args.output_folder, 'activation_visualizations/network{}/'.format(network_id)))
+            end = time.time()
+            status("STATUS: Done computing diagrams for network {}. Time elapsed: {}".format(network_id, end-start))
+
+            status("STATUS: Computing landscapes for network {}".format(network_id))
+            start = time.time()
+            landscapes = compute_landscapes(diagrams,
+                                            args.landscape_dx,
+                                            args.landscape_min_x,
+                                            args.landscape_max_x,
+                                            thresholds=args.diagram_threshold)
+            end = time.time()
+            status("STATUS: Done computing landscapes for network {}. Time elapsed: {}".format(network_id, end-start))
+            
             if args.save_diagram_plots:
                 status("STATUS: Saving diagram plots for network {}".format(network_id))
                 save_diagram_plots(diagrams, os.path.join(args.output_folder, './diagram_plots/network{}'.format(net.id)))
@@ -156,6 +179,7 @@ def main(args):
             
             if args.save_activations:
                 status("STATUS: Saving activations for network {}".format(network_id))
+                # TODO: use activations from above
                 save_activations(net, dataset, os.path.join(args.output_folder, './activations/network{}'.format(net.id)))
 
             if args.save_landscape_plots:
