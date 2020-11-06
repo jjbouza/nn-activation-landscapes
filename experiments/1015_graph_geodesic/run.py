@@ -38,7 +38,7 @@ def generate_cli_parser():
                         help='number of epochs to train (default: 14)')
     parser.add_argument('--learning-rate', type=float, default=0.05, metavar='LR',
                         help='learning rate (default: 0.02)')
-    parser.add_argument('--ignore-failed', default=True, action='store_true',
+    parser.add_argument('--ignore-failed', default=False, action='store_true',
                         help='Do not count failed training (less than training threshold)')
 
     # diagram and landscape computation settings

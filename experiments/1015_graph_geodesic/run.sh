@@ -23,6 +23,7 @@ if [ $# -gt 0 ]; then
         --save-diagram \
         --save-activations \
         --save-mean-landscapes \
+        --ignore-failed \
         #| tee $OUTPUT_FOLDER/log.txt
 else
     echo ERROR: Did not provide output folder argument.
