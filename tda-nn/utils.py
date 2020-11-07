@@ -17,4 +17,4 @@ def warning(string):
     print(bcolors.WARNING+string+bcolors.ENDC)
 
 def error(string):
-    print(bcolors+FAIL+string+bcolors.ENDC)
+    print(bcolors.FAIL+string+bcolors.ENDC)
