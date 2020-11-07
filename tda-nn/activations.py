@@ -2,6 +2,8 @@ import torch
 from skorch.net import NeuralNet
 
 from utils import *
+import numpy as np
+import os
 
 def compute_activations(net, 
                         data, 
@@ -13,11 +15,62 @@ def compute_activations(net,
         module = net.to(device)
     else:
         error("Error: invalid network type {}".format(net))
-    
+
     activations = []
-    for n in layers:
-        xn = module(data, n)
-        activations.append(xn)
+    module.eval()
+    with torch.no_grad():
+        for n in layers:
+            xn = module(data, n)
+            activations.append(xn)
 
     return activations
 
+def save_activations(activations, dname):
+    os.makedirs(dname, exist_ok=True)
+    for i, to_save in enumerate(activations):
+        np.savetxt(os.path.join(dname, "layer{}.csv".format(i)), 
+                to_save.detach().cpu().numpy(),
+                delimiter=',')
+
+if __name__=='__main__':
+    import argparse
+
+
+    def load_data(fname):
+        if os.path.splitext(fname)[1] == '.npy':
+            data_numpy = np.load(fname)
+            np.random.shuffle(data_numpy)
+            data = torch.from_numpy(data_numpy).float()
+        elif os.path.splitext(fname)[1] == '.csv':
+            data_numpy = np.loadtxt(fname, delimiter=',')
+            np.random.shuffle(data_numpy)
+            data = torch.from_numpy(data_numpy).float()
+        else:
+            error("Error: invalid file extension {}, this script only support numpy datasets.".format(os.path.splitext(fname)[1]))
+            quit()
+
+        return data
+
+    parser = argparse.ArgumentParser(description='Compute activations given a network and data.')
+    parser.add_argument('--network', type=str)
+    parser.add_argument('--input_data', type=str)
+    parser.add_argument('--sample-count', type=int)
+    parser.add_argument('--persistence-class', type=int)
+    parser.add_argument('--layers', type=int, nargs='+')
+    parser.add_argument('--device', type=str, default='cpu')
+    parser.add_argument('--output_dir', type=str)
+
+    args = parser.parse_args()
+
+    # load network and data
+    model = torch.load(args.network).to(args.device)
+    data = load_data(args.input_data).to(args.device)
+    # data preprocessing
+    if args.persistence_class != -1:
+        class_data = data[data[:,-1]==args.persistence_class]
+    else:
+        class_data = data
+    final_data = class_data[:args.sample_count, :-1]
+    # save activations
+    activations = compute_activations(model, final_data, args.layers, args.device)
+    save_activations(activations, args.output_dir)

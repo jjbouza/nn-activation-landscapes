@@ -44,6 +44,9 @@ def save_landscape_plots(landscapes, dirname):
             plt.cla()
     plt.close('all')
 
+    plt.close('all')
+
+
 def plot_landscape(landscapes, x_axis, ax):
     # landscapes: np.array[levels, points, 2]
     starts = []

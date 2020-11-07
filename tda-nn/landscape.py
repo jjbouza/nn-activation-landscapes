@@ -1,6 +1,4 @@
 import numpy as np
-from diagram import compute_diagram_n
-from ripser import Rips
 from utils import *
 
 import math
@@ -135,3 +133,52 @@ def save_landscape(landscape, dirname):
         for dim_id, dim in enumerate(layer):
             name = os.path.join(dirname, "layer{}dim{}.csv".format(layer_id, dim_id))
             np.savetxt(name, dim[1], delimiter=',')
+
+if __name__=='__main__':
+    import argparse
+    import warnings
+    import re
+    warnings.simplefilter("ignore", UserWarning)
+
+    def load_data(fnames):
+        data = {}
+        max_layers, max_dims = 0,0
+        for fname in os.listdir(fnames):
+            fname_meta = re.findall("[0-9]+", fname)
+            layer, dim = int(fname_meta[0]), int(fname_meta[1])
+            if layer > max_layers:
+                max_layers = layer
+            if dim > max_dims:
+                max_dims = dim
+            path = os.path.join(fnames, fname)
+            if os.path.splitext(path)[1] == '.csv':
+                network_data = np.loadtxt(path, delimiter=',')
+                if len(network_data.shape) == 1:
+                    data[(layer, dim)] = np.zeros([0,2])
+                else:
+                    data[(layer, dim)] = network_data
+            else:
+                error("Error: invalid file extension {}, this script only support CSV datasets.".format(os.path.splitext(fname)[1]))
+                quit()
+        
+        data_final = [[None for j in range(max_dims)] for i in range(max_layers)]
+        for i in range(max_layers):
+            for j in range(max_dims):
+                data_final[i][j] = data[(i,j)]
+        
+        return data_final
+
+    parser = argparse.ArgumentParser(description='Compute landscapes given diagrams.')
+    parser.add_argument('--diagrams', type=str)
+    parser.add_argument('--landscape-dx', type=float)
+    parser.add_argument('--landscape-min-x', type=float)
+    parser.add_argument('--landscape-max-x', type=float)
+    parser.add_argument('--output-dir', type=str)
+
+    args = parser.parse_args()
+   
+
+    diagrams = load_data(args.diagrams)
+    landscapes = compute_landscapes(diagrams, args.landscape_dx, args.landscape_min_x, args.landscape_max_x)
+    save_landscape(landscapes, args.output_dir)
+

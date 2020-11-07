@@ -3,6 +3,7 @@ import os
 
 from ripser import ripser
 import numpy as np
+import torch
 
 import visualize
 # some useful computational geometry tools
@@ -32,7 +33,14 @@ def compute_diagrams(data, maxdims, thresholds, metric='L2', k=12, save_GG_activ
 
 def compute_diagram(data, maxdim, threshold, metric='L2', k=12, save_GG_activations_plots=None):
     # compute and return diagram
-    data_cpu = data.cpu().detach().numpy()
+    if isinstance(data, torch.Tensor):
+        data_cpu = data.cpu().detach().numpy()
+    elif isinstance(data, np.ndarray):
+        data_cpu = data
+    else:
+        error("Unsupported data type: {} for compute_diagram".format(type(data)))
+        quit()
+
     X = data_cpu.reshape(data.shape[0], -1)
 
     with warnings.catch_warnings():
@@ -83,3 +91,41 @@ def save_diagram(diagram, dirname):
             name = os.path.join(dirname, "layer{}dim{}.csv".format(layer_id, dim_id))
             np.savetxt(name, dim, delimiter=',')
 
+if __name__ == '__main__':
+    import argparse
+
+    def load_data(fnames):
+        data = []
+        for fname in os.listdir(fnames):
+            path = os.path.join(fnames, fname)
+            if os.path.splitext(path)[1] == '.csv':
+                data.append(np.loadtxt(path, delimiter=','))
+            else:
+                error("Error: invalid file extension {}, this script only support CSV datasets.".format(os.path.splitext(fname)[1]))
+                quit()
+
+        return data
+
+    parser = argparse.ArgumentParser(description='Compute diagrams given a network and data.')
+    parser.add_argument('--activations', type=str)
+    parser.add_argument('--persistence-data-samples', type=int)
+    parser.add_argument('--max-diagram-dimension', type=int, nargs='+')
+    parser.add_argument('--diagram-threshold', type=float, nargs='+')
+    parser.add_argument('--persistence-layers', type=int, nargs='+')
+    parser.add_argument('--diagram-metric', type=str)
+    parser.add_argument('--nn-graph-k', type=int)
+    parser.add_argument('--save-gg-diagram-plots', default=None)
+    parser.add_argument('--output-dir', type=str)
+
+    args = parser.parse_args()
+    
+    # take first persistence-data-samples rows from activations
+    data = load_data(args.activations)[:args.persistence_data_samples]
+    diagrams = compute_diagrams(data, 
+                                args.max_diagram_dimension, 
+                                args.diagram_threshold, 
+                                args.diagram_metric, 
+                                args.nn_graph_k, 
+                                args.save_gg_diagram_plots)
+
+    save_diagram(diagrams, args.output_dir)

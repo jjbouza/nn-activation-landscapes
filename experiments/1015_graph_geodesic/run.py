@@ -2,18 +2,14 @@ import argparse
 import importlib
 import os
 
-from csv_loader import CSVDataset, extract_class
+from csv_loader import CSVDataset
 
 import numpy as np
 
 import torch
-from skorch.net import NeuralNet
-from skorch import NeuralNetClassifier
-from skorch.callbacks import EpochScoring, LRScheduler
-from train.callbacks import TrainingThreshold
+import trainer
 from train.extract_data import extract_data
-from train.utils import save_activations
-from activations import compute_activations
+from activations import compute_activations, save_activations
 from landscape import compute_landscapes, save_landscape
 from diagram import compute_diagrams, save_diagram
 from visualize import save_diagram_plots, save_landscape_plots
@@ -84,8 +80,6 @@ def main(args):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     # load data
     dataset = CSVDataset(args.csv_file)
-    y_train = np.array([y for X, y in iter(dataset)])
-
 
     print("Network: {}".format(network()))
     print("Dataset Samples: {}".format(len(dataset)))
@@ -94,40 +88,15 @@ def main(args):
     while network_id <= args.network_count:
         status('STATUS: Beginning training of network {}'.format(network_id))
         print('Running on device: {}'.format(device))
-
-        # Prepare training callback
-        training_accuracy = EpochScoring('accuracy',
-                                         lower_is_better=False,
-                                         on_train=True,
-                                         name='Training_Accuracy')
-        test_accuracy = EpochScoring('accuracy',
-                                     lower_is_better=False,
-                                     on_train=False,
-                                     name='Test_Accuracy')
-
-        training_threshold = TrainingThreshold(training_threshold=args.training_threshold,
-                                               on_training=True)
-
-        callbacks = [training_accuracy,
-                     test_accuracy,
-                     training_threshold]
         
-        # initalize the network
-        net = NeuralNetClassifier(
-            network,
-            criterion=torch.nn.CrossEntropyLoss,
-            max_epochs=args.max_epochs,
-            batch_size=args.batch_size,
-            optimizer=torch.optim.Adam,
-            lr=args.learning_rate,
-            callbacks=callbacks,
-            device=device)
+        net = trainer.train(args.model,
+                            dataset,
+                            args.training_threshold,
+                            args.max_epochs,
+                            args.batch_size, 
+                            args.learning_rate)
 
-        net.set_params(callbacks__valid_acc=None)
         net.id = network_id
-
-
-        net.fit(X=dataset, y=y_train)
 
         if net.history[-1, 'Training_Accuracy'] >= args.training_threshold or args.ignore_failed == False:
             status('STATUS: Starting persistence computation for network {}'.format(network_id))
@@ -140,7 +109,7 @@ def main(args):
                                               landscape_data,
                                               layers=args.persistence_layers)
             end = time.time()
-            status("STATUS: Done computing activations for network {}. Time elapsed: {}".format(network_id, end-start))
+            status("STATUS: Done computing activations for network {}. Time elapsed: {} s".format(network_id, end-start))
             
             status("STATUS: Computing diagrams for network {}".format(network_id))
             start = time.time()
@@ -151,7 +120,7 @@ def main(args):
                                       k=args.nn_graph_k,
                                       save_GG_activations_plots=os.path.join(args.output_folder, 'activation_visualizations/network{}/'.format(network_id)))
             end = time.time()
-            status("STATUS: Done computing diagrams for network {}. Time elapsed: {}".format(network_id, end-start))
+            status("STATUS: Done computing diagrams for network {}. Time elapsed: {} s".format(network_id, end-start))
 
             status("STATUS: Computing landscapes for network {}".format(network_id))
             start = time.time()
@@ -161,7 +130,7 @@ def main(args):
                                             args.landscape_max_x,
                                             thresholds=args.diagram_threshold)
             end = time.time()
-            status("STATUS: Done computing landscapes for network {}. Time elapsed: {}".format(network_id, end-start))
+            status("STATUS: Done computing landscapes for network {}. Time elapsed: {} s".format(network_id, end-start))
             
             if args.save_diagram_plots:
                 status("STATUS: Saving diagram plots for network {}".format(network_id))
@@ -180,7 +149,7 @@ def main(args):
             if args.save_activations:
                 status("STATUS: Saving activations for network {}".format(network_id))
                 # TODO: use activations from above
-                save_activations(net, dataset, os.path.join(args.output_folder, './activations/network{}'.format(net.id)))
+                save_activations(activations, os.path.join(args.output_folder, './activations/network{}'.format(net.id)))
 
             if args.save_landscape_plots:
                 status("STATUS: Saving landscape plots for network {}".format(network_id))
