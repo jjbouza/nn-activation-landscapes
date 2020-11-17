@@ -63,7 +63,7 @@ if __name__=='__main__':
     args = parser.parse_args()
 
     # load network and data
-    model = torch.load(args.network).to(args.device)
+    model = torch.load(args.network, map_location=torch.device(args.device)).to(args.device)
     data = load_data(args.input_data).to(args.device)
     # data preprocessing
     if args.persistence_class != -1:
