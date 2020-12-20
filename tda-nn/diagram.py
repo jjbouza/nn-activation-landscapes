@@ -91,7 +91,9 @@ def save_diagram(diagram, dirname):
         os.makedirs(dirname)
     for layer_id, layer in enumerate(diagram):
         for dim_id, dim in enumerate(layer):
-            name = os.path.join(dirname, "layer{}dim{}.csv".format(layer_id, dim_id))
+            layer_id_zfill = int2str_with_leading_zero(layer_id, len(diagram))
+            dim_id_zfill = int2str_with_leading_zero(dim_id, len(layer))
+            name = os.path.join(dirname, "layer{}dim{}.csv".format(layer_id_zfill, dim_id_zfill))
             np.savetxt(name, dim, delimiter=',')
 
 if __name__ == '__main__':

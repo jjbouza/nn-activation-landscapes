@@ -18,3 +18,7 @@ def warning(string):
 
 def error(string):
     print(bcolors.FAIL+string+bcolors.ENDC)
+
+def int2str_with_leading_zero(input_int, largest_int):
+    desired_len = len(str(largest_int))
+    return str(input_int).zfill(desired_len)

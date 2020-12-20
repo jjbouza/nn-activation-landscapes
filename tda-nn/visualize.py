@@ -7,6 +7,7 @@ from matplotlib import pyplot as plt
 from persim import visuals, plot_diagrams
 
 from sklearn.decomposition import PCA
+from utils import int2str_with_leading_zero
 
 def indices(arr):
     if len(arr.shape) == 0:
@@ -30,6 +31,7 @@ def save_diagram_plots(diagrams, dirname):
     fig, ax = plt.subplots()  # Create a figure and an axes.
     for layer, diagram in enumerate(diagrams):
         plot_diagrams(diagram, show=False, ax=ax)
+        layer_id = int2str_with_leading_zero(layer, len(diagrams))
         fig.savefig(os.path.join(dirname, 'layer{}.png'.format(layer)))
         plt.cla()
     plt.close('all')
@@ -42,7 +44,9 @@ def save_landscape_plots(landscapes, dirname):
     for layer, landscape_ in enumerate(landscapes):
         for homology, landscape in enumerate(landscape_):
             plot_landscape(landscape, np.linspace(0, 1, num=landscape.shape[1]), ax=ax)
-            fig.savefig(os.path.join(dirname, 'layer{}degree{}'.format(layer, homology)))
+            layer_id = int2str_with_leading_zero(layer, len(landscapes))
+            homology_id = int2str_with_leading_zero(homology, len(landscape_))
+            fig.savefig(os.path.join(dirname, 'layer{}dim{}'.format(layer_id, homology_id)))
             plt.cla()
     plt.close('all')
 

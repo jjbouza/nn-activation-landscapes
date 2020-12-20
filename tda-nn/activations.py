@@ -27,7 +27,8 @@ def compute_activations(net,
 def save_activations(activations, dname):
     os.makedirs(dname, exist_ok=True)
     for i, to_save in enumerate(activations):
-        np.savetxt(os.path.join(dname, "layer{}.csv".format(i)), 
+        activation_id = int2str_with_leading_zero(i, len(activations))
+        np.savetxt(os.path.join(dname, "layer{}.csv".format(activation_id)), 
                 to_save.detach().cpu().numpy(),
                 delimiter=',')
 
