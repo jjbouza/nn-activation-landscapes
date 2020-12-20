@@ -9,10 +9,12 @@ from persim import visuals, plot_diagrams
 from sklearn.decomposition import PCA
 
 def indices(arr):
-    first_nz = len(arr)
+    if len(arr.shape) == 0:
+        return 0,0
+    first_nz = arr.shape[0]
     last_nz = 0
 
-    for en in range(len(arr)):
+    for en in range(arr.shape[0]):
         if arr[en] > 1e-5:
             last_nz = en
 
@@ -39,28 +41,28 @@ def save_landscape_plots(landscapes, dirname):
     fig, ax = plt.subplots()  # Create a figure and an axes.
     for layer, landscape_ in enumerate(landscapes):
         for homology, landscape in enumerate(landscape_):
-            plot_landscape(landscape[1], landscape[0], ax=ax)
+            plot_landscape(landscape, np.linspace(0, 1, num=landscape.shape[1]), ax=ax)
             fig.savefig(os.path.join(dirname, 'layer{}degree{}'.format(layer, homology)))
             plt.cla()
     plt.close('all')
 
-    plt.close('all')
-
 
 def plot_landscape(landscapes, x_axis, ax):
-    # landscapes: np.array[levels, points, 2]
-    starts = []
-    ends = []
-    for level in landscapes:
-        start, end = indices(level)
-        starts.append(start)
-        ends.append(end)
+    # landscapes: np.array[levels, points, 1]
+    #starts = []
+    #ends = []
+    #for level in landscapes:
+    #    start, end = indices(level)
+    #    starts.append(start)
+    #    ends.append(end)
 
-    start = min(starts)
-    end = max(ends)+2
+    #start = min(starts)
+    #end = max(ends)+2
 
+    #for level in landscapes:
+    #    ax.plot(x_axis[:start+end], level[:start+end])
     for level in landscapes:
-        ax.plot(x_axis[:start+end], level[:start+end])
+        ax.plot(level)
 
 def plot_graph(data, adjacency_matrix, save=None):
     # run PCA on data

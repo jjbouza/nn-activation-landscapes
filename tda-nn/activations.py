@@ -22,7 +22,6 @@ def compute_activations(net,
         for n in layers:
             xn = module(data, n)
             activations.append(xn)
-
     return activations
 
 def save_activations(activations, dname):
@@ -70,6 +69,7 @@ if __name__=='__main__':
         class_data = data[data[:,-1]==args.persistence_class]
     else:
         class_data = data
+
     final_data = class_data[:args.sample_count, :-1]
     # save activations
     activations = compute_activations(model, final_data, args.layers, args.device)

@@ -143,7 +143,7 @@ if __name__=='__main__':
     def load_data(fnames):
         data = {}
         max_layers, max_dims = 0,0
-        for fname in os.listdir(fnames):
+        for fname in sorted(os.listdir(fnames)):
             fname_meta = re.findall("[0-9]+", fname)
             layer, dim = int(fname_meta[0]), int(fname_meta[1])
             if layer > max_layers:
@@ -161,9 +161,9 @@ if __name__=='__main__':
                 error("Error: invalid file extension {}, this script only support CSV datasets.".format(os.path.splitext(fname)[1]))
                 quit()
         
-        data_final = [[None for j in range(max_dims)] for i in range(max_layers)]
-        for i in range(max_layers):
-            for j in range(max_dims):
+        data_final = [[None for j in range(max_dims+1)] for i in range(max_layers+1)]
+        for i in range(max_layers+1):
+            for j in range(max_dims+1):
                 data_final[i][j] = data[(i,j)]
         
         return data_final

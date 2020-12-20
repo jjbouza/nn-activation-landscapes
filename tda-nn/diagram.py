@@ -71,10 +71,13 @@ def graph_geodesic_adjacency(data, k=12):
 
 def graph_geodesic_metric(adjacency_matrix):
     '''
-    Input: Point Cloud - [N, d]
+    Input: Adjacency matrix: [N,N]
     Output: Graph geodesic distance matrix: [N, N]
     '''
     distance_matrix = gp.graph_shortest_path(adjacency_matrix, directed=False, method='auto')
+    distance_matrix[distance_matrix==0] = np.inf
+    np.fill_diagonal(distance_matrix, 0)
+
     return distance_matrix
 
 def scale_normalize(data, p=2):
@@ -96,7 +99,7 @@ if __name__ == '__main__':
 
     def load_data(fnames):
         data = []
-        for fname in os.listdir(fnames):
+        for fname in sorted(os.listdir(fnames)):
             path = os.path.join(fnames, fname)
             if os.path.splitext(path)[1] == '.csv':
                 data.append(np.loadtxt(path, delimiter=','))
@@ -108,7 +111,6 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Compute diagrams given a network and data.')
     parser.add_argument('--activations', type=str)
-    parser.add_argument('--persistence-data-samples', type=int)
     parser.add_argument('--max-diagram-dimension', type=int, nargs='+')
     parser.add_argument('--diagram-threshold', type=float, nargs='+')
     parser.add_argument('--persistence-layers', type=int, nargs='+')
@@ -120,12 +122,12 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     # take first persistence-data-samples rows from activations
-    data = load_data(args.activations)[:args.persistence_data_samples]
+    data_ = load_data(args.activations)
+    data = [data_[layer] for layer in args.persistence_layers]
     diagrams = compute_diagrams(data, 
                                 args.max_diagram_dimension, 
                                 args.diagram_threshold, 
                                 args.diagram_metric, 
                                 args.nn_graph_k, 
                                 args.save_gg_diagram_plots)
-
     save_diagram(diagrams, args.output_dir)
