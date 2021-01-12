@@ -57,7 +57,7 @@ def compute_diagram(data, maxdim, threshold, metric='L2', k=12, save_GG_activati
             pd = ripser(graph_geodesic_dm, maxdim, threshold, distance_matrix=True)['dgms']
         elif metric == 'SN' or metric == 'scale normalized':
             normalized_X = scale_normalize(X)
-            pd = ripser(X, maxdim, threshold)['dgms']
+            pd = ripser(normalized_X, maxdim, threshold)['dgms']
         else:
             error("Error: Unknown metric: ".format(metric))
             quit()
