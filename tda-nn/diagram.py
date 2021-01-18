@@ -83,7 +83,10 @@ def graph_geodesic_metric(adjacency_matrix):
 def scale_normalize(data, p=2):
     distance_matrix = scipy.spatial.distance_matrix(data, data, p)
     mean_distance = np.mean(distance_matrix)
-    normalized_data = data/mean_distance
+    if mean_distance == 0:
+        normalized_data = data
+    else:
+        normalized_data = data/mean_distance
     return normalized_data
 
 def save_diagram(diagram, dirname):
