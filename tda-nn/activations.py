@@ -4,6 +4,7 @@ from skorch.net import NeuralNet
 from utils import *
 import numpy as np
 import os
+import sys
 
 def compute_activations(net, 
                         data, 
@@ -59,10 +60,12 @@ if __name__=='__main__':
     parser.add_argument('--layers', type=int, nargs='+')
     parser.add_argument('--device', type=str, default='cpu')
     parser.add_argument('--output_dir', type=str)
+    parser.add_argument('--models_dir', type=str)
 
     args = parser.parse_args()
 
     # load network and data
+    sys.path.append(args.models_dir)
     model = torch.load(args.network, map_location=torch.device(args.device)).to(args.device)
     data = load_data(args.input_data).to(args.device)
     # data preprocessing

@@ -6,6 +6,8 @@ from skorch import NeuralNetClassifier
 from skorch.callbacks import EpochScoring, LRScheduler
 from train.callbacks import TrainingThreshold
 
+import os
+import sys
 from csv_loader import CSVDataset
 
 def train(model_fname,
@@ -14,8 +16,8 @@ def train(model_fname,
           max_epochs,
           batch_size,
           learning_rate):
-
-    network = __import__(model_fname).Net
+    sys.path.append(os.path.dirname(model_fname))
+    network = __import__(os.path.basename(model_fname)).Net
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     # load data
     y_train = np.array([y for X, y in iter(dataset)])
@@ -69,6 +71,7 @@ if __name__=='__main__':
     parser.add_argument('--learning-rate', type=float, default=0.05, metavar='LR',
                         help='learning rate (default: 0.02)')
     parser.add_argument('--output-name', type=str)
+    parser.add_argument('--log-name', type=str)
     
     args = parser.parse_args()
     dataset = CSVDataset(args.csv_file)
@@ -79,5 +82,11 @@ if __name__=='__main__':
                 args.batch_size,
                 args.learning_rate)
 
+    final_training_acc = net.history[-1, 'Training_Accuracy']
+    final_testing_acc = net.history[-1, 'Test_Accuracy']
+
     torch.save(net.module_, args.output_name)
+    with open(args.log_name, 'w') as log_handle:
+        log_handle.write('Final Training Accuracy: {} \nFinal Test Accuracy: {}\n'.format(final_training_acc,
+                                                                                         final_testing_acc))
     
