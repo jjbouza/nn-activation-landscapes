@@ -15,6 +15,6 @@ class TrainingThreshold(Callback):
     def on_epoch_end(self, net, dataset_train, dataset_valid):
         current_score = net.history[-1, self._monitor]
         if current_score >= self._training_threshold:
-            self._sink((bcolors.BOLD+"STATUS: Stopping network training early due to passing of training threshold accuracy of {} with an accuracy of {}"+bcolors.ENDC).format(self._training_threshold, current_score))
+            self._sink((bcolors.BOLD+"STATUS: Stopping network training early due to passing of threshold accuracy of {} with an accuracy of {}"+bcolors.ENDC).format(self._training_threshold, current_score))
             raise KeyboardInterrupt
 

@@ -15,7 +15,7 @@ class Net(nn.Module):
         self.fc_last = nn.Linear(15, 2)
 
         self.fc_layers = [self.fc_first]+self.middle_fc
-        self.layers = nn.ModuleList([nn.Sequential(fc_layer, nn.ReLU()) for fc_layer in
+        self.layers = nn.ModuleList([nn.Sequential(fc_layer, nn.Tanh()) for fc_layer in
                                      self.fc_layers]+[self.fc_last])
 
 
@@ -35,7 +35,7 @@ class Net(nn.Module):
 
         if n == None:
             n = len(self.layers)
-        
+
         for f in self.layers[:n]:
             x = f(x)
 

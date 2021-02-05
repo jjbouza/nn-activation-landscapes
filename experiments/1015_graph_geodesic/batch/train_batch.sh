@@ -40,9 +40,10 @@ for (( run=$START_NUM; run<=END_NUM; run++ )); do
     mkdir -p ./network_${run}
     PYTHONPATH=./:../../../tda-nn/:../ $PYTHON ../trainer.py \
         --model /blue/bubenik/josebouza/Projects/tda-nn/experiments/1015_graph_geodesic/models/model \
-        --csv-file ../disk6.csv \
-        --training-threshold 0.99 \
-        --batch-size 2560 \
+        --csv-file ../data/disk6.csv \
+        --training-threshold 1.1 \
+        --testing-threshold 0.99
+        --batch-size 512 \
         --max-epochs 8000 \
         --learning-rate 0.01 \
         --output-name ./network_$run/network.pt \

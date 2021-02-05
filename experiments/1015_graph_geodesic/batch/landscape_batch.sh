@@ -10,7 +10,7 @@
 #SBATCH --mem-per-cpu=12gb           # Memory per processor
 #SBATCH --time=24:00:00             # Time limit hrs:min:sec
 #SBATCH --output=array_%A-%a.out    # Standard output and error log
-#SBATCH --array=1-20                # Array range
+#SBATCH --array=1-2                # Array range
 # This is an example script that combines array tasks with
 # bash loops to process many short runs. Array jobs are convenient
 # for running lots of tasks, but if each task is short, they
@@ -44,7 +44,7 @@ for (( run=$START_NUM; run<=END_NUM; run++ )); do
     echo Starting activation computations for network ${run}.
     PYTHONPATH=../../../tda-nn/:../ $PYTHON ../../../tda-nn/activations.py \
         --network $OUTPUT_FOLDER/network.pt \
-        --input_data ../disk6.csv \
+        --input_data ../data/disk6.csv \
         --persistence-class 0 \
         --sample-count 1000 \
         --layers 0 1 2 3 4 5 6 7 8 9 10 \
@@ -57,9 +57,9 @@ for (( run=$START_NUM; run<=END_NUM; run++ )); do
         --max-diagram-dimension 1 1 1 1 1 1 1 1 1 1 1\
         --diagram-threshold 100000 100000 100000 100000 100000 100000 100000 100000 100000 100000 100000\
         --persistence-layers 0 1 2 3 4 5 6 7 8 9 10\
-        --diagram-metric GG \
+        --diagram-metric SN \
         --nn-graph-k 12 \
-        --save-gg-diagram-plots $OUTPUT_FOLDER/activation_visualizations/ \
+        --save-diagram-plots $OUTPUT_FOLDER/activation_visualizations/ \
         --output-dir $OUTPUT_FOLDER/diagrams/ \
 
     echo Starting diagram plotting for network ${run}.

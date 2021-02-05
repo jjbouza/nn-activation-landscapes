@@ -68,16 +68,17 @@ def plot_landscape(landscapes, x_axis, ax):
     for level in landscapes:
         ax.plot(level)
 
-def plot_graph(data, adjacency_matrix, save=None):
+def plot_activations(data, adjacency_matrix, save=None):
     # run PCA on data
     plt.clf()
     pca = PCA(n_components=2)
     new_data = pca.fit_transform(data)
     plt.scatter(new_data[:,0], new_data[:,1])
-    for i in range(adjacency_matrix.shape[0]):
-        for j in range(adjacency_matrix.shape[1]):
-            if adjacency_matrix[i, j] == 1:
-                plt.plot((new_data[i, 0], new_data[j, 0]), (new_data[i, 1], new_data[j, 1]))
+    if adjacency_matrix is not None:
+        for i in range(adjacency_matrix.shape[0]):
+            for j in range(adjacency_matrix.shape[1]):
+                if adjacency_matrix[i, j] == 1:
+                    plt.plot((new_data[i, 0], new_data[j, 0]), (new_data[i, 1], new_data[j, 1]))
 
     if save is None:
         plt.show()
