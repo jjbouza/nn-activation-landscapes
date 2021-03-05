@@ -62,6 +62,12 @@ def compute_diagram(data, maxdim, threshold, metric='L2', k=12, save_activations
             pd = ripser(normalized_X, maxdim, threshold)['dgms']
             if save_activations_plots is not None:
                 visualize.plot_activations(normalized_X, None, save=save_activations_plots)
+
+        elif metric == 'MN' or metric == 'max normalized':
+            normalized_X = scale_normalize(X, max=True)
+            pd = ripser(normalized_X, maxdim, threshold)['dgms']
+            if save_activations_plots is not None:
+                visualize.plot_activations(normalized_X, None, save=save_activations_plots)
         else:
             error("Error: Unknown metric: ".format(metric))
             quit()
@@ -84,15 +90,19 @@ def graph_geodesic_metric(adjacency_matrix):
 
     return distance_matrix
 
-def scale_normalize(data, p=2):
+def scale_normalize(data, p=2, max=False):
     translated_data = data-np.mean(data, axis=0)
     distance_matrix = scipy.spatial.distance_matrix(translated_data, translated_data, p)
+    
+    if max:
+        scale = np.max(distance_matrix)
+    else:
+        scale = np.mean(distance_matrix)
 
-    max_distance = np.max(distance_matrix)
-    if max_distance == 0:
+    if scale == 0:
         normalized_data = translated_data
     else:
-        normalized_data = translated_data/max_distance
+        normalized_data = translated_data/scale
 
     return normalized_data
 
