@@ -16,7 +16,10 @@ def train(model_fname,
           testing_threshold,
           max_epochs,
           batch_size,
-          learning_rate):
+          learning_rate,
+          output_prefix,
+          log_file):
+
     sys.path.append(os.path.dirname(model_fname))
     network = __import__(os.path.basename(model_fname)).Net
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -34,14 +37,13 @@ def train(model_fname,
                                  name='Test_Accuracy')
 
     training_threshold = TrainingThreshold(training_threshold=training_threshold,
-                                           on_training=True)
-    testing_threshold  = TrainingThreshold(training_threshold=testing_threshold,
-                                           on_training=False)
+                                           testing_threshold=testing_threshold,
+                                           output_prefix=output_prefix,
+                                           log_file=log_file)
 
     callbacks = [training_accuracy,
                  test_accuracy,
-                 training_threshold,
-                 testing_threshold]
+                 training_threshold]
     
     # initalize the network
     net = NeuralNetClassifier(
@@ -67,9 +69,9 @@ if __name__=='__main__':
     parser.add_argument('--model', type=str, default='model',
                         help='Model to load.')
     parser.add_argument('--csv-file', type=str, default='disk6.csv')
-    parser.add_argument('--training-threshold', type=float, nargs='+', default=1.0,
+    parser.add_argument('--training-threshold', type=float, nargs='+', default=[1.0],
                         help='Training accuracy threshold (stop training at this accuracy).')
-    parser.add_argument('--testing-threshold', type=float, nargs='+', default=1.0,
+    parser.add_argument('--testing-threshold', type=float, nargs='+', default=[1.0],
                         help='Testing accuracy threshold (stop training at this accuracy).')
     parser.add_argument('--batch-size', type=int, default=1024, metavar='N',
                         help='input batch size for training (default: 1024)')
@@ -89,12 +91,9 @@ if __name__=='__main__':
                 args.testing_threshold,
                 args.max_epochs,
                 args.batch_size,
-                args.learning_rate)
+                args.learning_rate,
+                args.output_name,
+                args.log_name)
+
     final_training_acc = net.history[-1, 'Training_Accuracy']
     final_testing_acc = net.history[-1, 'Test_Accuracy']
-
-    torch.save(net.module_, args.output_name)
-    with open(args.log_name, 'w') as log_handle:
-        log_handle.write('Final Training Accuracy: {} \nFinal Test Accuracy: {}\n'.format(final_training_acc,
-                                                                                         final_testing_acc))
-    
