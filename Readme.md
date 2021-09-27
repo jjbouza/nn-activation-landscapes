@@ -1,5 +1,5 @@
-# tda-nn
-tda-nn is a package and set of experiments for analyzing neural networks using TDA, particularly Persistence Landscapes. 
+# nn-activation-landscapes
+nn-activation-landscapes is a package and set of experiments for analyzing neural networks using TDA, particularly Persistence Landscapes. 
 
 ## Quickstart
 
