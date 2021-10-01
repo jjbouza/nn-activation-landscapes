@@ -31,7 +31,7 @@ def save_activations(activations, dname):
         activation_id = int2str_with_leading_zero(i, len(activations))
         np.savetxt(os.path.join(dname, "layer{}.csv".format(activation_id)), 
                 to_save.detach().cpu().numpy(),
-                delimiter=',')
+                delimiter=',', fmt='%g')
 
 if __name__=='__main__':
     import argparse
@@ -57,6 +57,7 @@ if __name__=='__main__':
     parser.add_argument('--input_data', type=str)
     parser.add_argument('--sample-count', type=int)
     parser.add_argument('--persistence-class', type=int)
+    parser.add_argument('--keep_class', action='store_true')
     parser.add_argument('--layers', type=int, nargs='+')
     parser.add_argument('--device', type=str, default='cpu')
     parser.add_argument('--output_dir', type=str)
@@ -72,9 +73,15 @@ if __name__=='__main__':
     if args.persistence_class != -1:
         class_data = data[data[:,-1]==args.persistence_class]
     else:
-        class_data = data
+        shuffle_idx = torch.randperm(data.shape[0])
+        class_data = data[shuffle_idx]
 
     final_data = class_data[:args.sample_count, :-1]
+    classes = class_data[:args.sample_count, -1].unsqueeze(-1)
+
     # save activations
     activations = compute_activations(model, final_data, args.layers, args.device)
+    if args.keep_class:
+        activations = [torch.cat([activation, classes], axis=-1) for activation in activations]
+
     save_activations(activations, args.output_dir)
