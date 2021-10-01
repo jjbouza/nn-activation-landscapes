@@ -38,8 +38,9 @@ if __name__=='__main__':
 
     parser = argparse.ArgumentParser(description='Plot diagrams.')
     parser.add_argument('--diagrams', type=str)
+    parser.add_argument('--includes', type=int, nargs='+', default=None)
     parser.add_argument('--output-dir', type=str)
 
     args = parser.parse_args()
     diagrams = load_data(args.diagrams)
-    save_diagram_plots(diagrams, args.output_dir)
+    save_diagram_plots(diagrams, args.output_dir, include=args.include)

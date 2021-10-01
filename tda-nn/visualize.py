@@ -25,7 +25,7 @@ def indices(arr):
 
     return first_nz, last_nz
 
-def save_diagram_plots(diagrams, dirname):
+def save_diagram_plots(diagrams, dirname, include=None):
     if not os.path.exists(dirname):
         os.makedirs(dirname)
 
@@ -35,7 +35,7 @@ def save_diagram_plots(diagrams, dirname):
         if any([d.shape[0] == 0 for d in diagram]):
             warning("Not plotting some diagrams with 0 entries.")
         if plot_only != []:
-            plot_diagrams(plot_only, show=False, ax=ax)
+            plot_diagrams(plot_only, show=False, ax=ax, plot_only=include)
             layer_id = int2str_with_leading_zero(layer, len(plot_only))
             fig.savefig(os.path.join(dirname, 'layer{}.png'.format(layer)))
             plt.cla()
