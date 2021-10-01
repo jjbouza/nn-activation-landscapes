@@ -15,13 +15,15 @@ import resource
 
 from utils import *
 
-def compute_diagrams(data, maxdims, thresholds, metric='L2', k=12, percentile=0.9, save_activations_plots=None):
+def compute_diagrams(data, maxdims, thresholds, metric='L2', k=12, percentile=0.9, centers=None, save_activations_plots=None):
     if save_activations_plots is not None:
         if not os.path.exists(save_activations_plots):
             os.makedirs(save_activations_plots)
 
+    center_list = [None for _ in maxdims] if centers is None else centers
+
     diagrams = []
-    for id, (activation, dim, threshold) in enumerate(zip(data, maxdims, thresholds)):
+    for id, (activation, dim, threshold, center) in enumerate(zip(data, maxdims, thresholds, center_list)):
         act_plot = None if save_activations_plots is None else os.path.join(save_activations_plots, 'layer{}.png'.format(id))
         diag = compute_diagram(activation, 
                                dim, 
@@ -29,12 +31,13 @@ def compute_diagrams(data, maxdims, thresholds, metric='L2', k=12, percentile=0.
                                metric=metric, 
                                k=k,
                                percentile=percentile,
+                               center=center,
                                save_activations_plots=act_plot)
         diagrams.append(diag)
 
     return diagrams
 
-def compute_diagram(data, maxdim, threshold, metric='L2', k=12, percentile=0.9, save_activations_plots=None):
+def compute_diagram(data, maxdim, threshold, metric='L2', k=12, percentile=0.9, center=None, save_activations_plots=None):
     # compute and return diagram
     if isinstance(data, torch.Tensor):
         data_cpu = data.cpu().detach().numpy()
@@ -73,11 +76,8 @@ def compute_diagram(data, maxdim, threshold, metric='L2', k=12, percentile=0.9, 
                 visualize.plot_activations(normalized_X, None, save=save_activations_plots)
         
         elif metric == 'PN' or metric == 'percentile normalized':
-            normalized_data, percentile_index= percentile_normalize(X, percentile)
+            normalized_data, percentile_index= percentile_normalize(X, percentile, center)
             distance_matrix = scipy.spatial.distance_matrix(normalized_data, normalized_data)
-            print(distance_matrix)
-            print(distance_matrix.mean())
-            print(distance_matrix.max())
             # Because we sorted the data, we just need to set the block beyond row and col = percentile_index to 0.
             distance_matrix[percentile_index:, percentile_index:] = 0
             pd = ripser_parallel(distance_matrix, maxdim=maxdim, thresh=threshold, metric='precomputed', n_threads=-1)['dgms']
@@ -122,21 +122,10 @@ def scale_normalize(data, p=2, max=False):
 
     return normalized_data
 
-def percentile_normalize(data, percentile, p=2):
-    distances = np.linalg.norm(data, ord=p, axis=1)
+def percentile_normalize(data, percentile, center=None, p=2):
+    if center:
+        data = data-np.mean(data, axis=0)
 
-    # reorder data from closest to farthest
-    argsort = np.argsort(distances)
-    data = data[argsort]
-    distances = distances[argsort]
-
-    percentile_index = int(distances.shape[0]*percentile) # index in translated_data where "outlier" region begins. 
-
-    normalized_data = data/distances[percentile_index]
-
-    return normalized_data, percentile_index
-
-def percentile_normalize_rectangle(data, percentile, p=2):
     distances = np.linalg.norm(data, ord=p, axis=1)
 
     # reorder data from closest to farthest
@@ -182,6 +171,7 @@ if __name__ == '__main__':
     parser.add_argument('--persistence-layers', type=int, nargs='+')
     parser.add_argument('--diagram-metric', type=str)
     parser.add_argument('--nn-graph-k', type=int)
+    parser.add_argument('--center', type=int, nargs='+')
     parser.add_argument('--percentile', type=float)
     parser.add_argument('--save-diagram-plots', default=None)
     parser.add_argument('--output-dir', type=str)
@@ -191,11 +181,13 @@ if __name__ == '__main__':
     # take first persistence-data-samples rows from activations
     data_ = load_data(args.activations)
     data = [data_[layer] for layer in args.persistence_layers]
+    center = [bool(c) for c in args.center]
     diagrams = compute_diagrams(data, 
                                 args.max_diagram_dimension, 
                                 args.diagram_threshold, 
                                 args.diagram_metric, 
                                 args.nn_graph_k, 
                                 args.percentile,
+                                center,
                                 args.save_diagram_plots)
     save_diagram(diagrams, args.output_dir)
