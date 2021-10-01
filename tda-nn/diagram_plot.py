@@ -43,4 +43,4 @@ if __name__=='__main__':
 
     args = parser.parse_args()
     diagrams = load_data(args.diagrams)
-    save_diagram_plots(diagrams, args.output_dir, include=args.include)
+    save_diagram_plots(diagrams, args.output_dir, include=args.includes)
