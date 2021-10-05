@@ -55,7 +55,6 @@ def save_landscape_plots(landscapes, dirname):
             plt.cla()
     plt.close('all')
 
-
 def plot_landscape(landscapes, x_axis, ax):
     # landscapes: np.array[levels, points, 1]
     #starts = []
@@ -87,6 +86,16 @@ def plot_activations(data, adjacency_matrix, save=None):
                 if adjacency_matrix[i, j] == 1:
                     plt.plot((new_data[i, 0], new_data[j, 0]), (new_data[i, 1], new_data[j, 1]))
 
+    if save is None:
+        plt.show()
+    else:
+        plt.savefig(save)
+
+def plot_histogram(histogram, bins, save=None):
+    plt.clf()
+    width = 0.7 * (bins[1] - bins[0])
+    center = (bins[:-1] + bins[1:]) / 2
+    plt.bar(center, histogram, align='center', width=width)
     if save is None:
         plt.show()
     else:
