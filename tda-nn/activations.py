@@ -1,5 +1,6 @@
 import torch
 from skorch.net import NeuralNet
+from scipy.special import softmax
 
 from utils import *
 import numpy as np
@@ -59,6 +60,7 @@ if __name__=='__main__':
     parser.add_argument('--persistence-class', type=int)
     parser.add_argument('--keep_class', action='store_true')
     parser.add_argument('--layers', type=int, nargs='+')
+    parser.add_argument('--do_softmax', action='store_true')
     parser.add_argument('--device', type=str, default='cpu')
     parser.add_argument('--output_dir', type=str)
     parser.add_argument('--models_dir', type=str)
@@ -81,6 +83,9 @@ if __name__=='__main__':
 
     # save activations
     activations = compute_activations(model, final_data, args.layers, args.device)
+    if args.do_softmax:
+        activations.append(softmax(activations[-1], axis=1))
+        
     if args.keep_class:
         activations = [torch.cat([activation, classes], axis=-1) for activation in activations]
 
