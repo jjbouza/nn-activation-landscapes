@@ -21,8 +21,10 @@ if __name__=='__main__':
             path = os.path.join(fnames, fname)
             if os.path.splitext(path)[1] == '.csv':
                 network_data = np.loadtxt(path, delimiter=',')
-                if len(network_data.shape) == 1:
+                if network_data.shape[0] == 0:
                     data[(layer, dim)] = np.zeros([0,2])
+                elif len(network_data.shape) == 1:
+                    data[(layer, dim)] = np.reshape(network_data, [1, network_data.shape[0]])
                 else:
                     data[(layer, dim)] = network_data
             else:

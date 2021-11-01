@@ -1,7 +1,9 @@
 import warnings
 import os
 
-from gph.python import ripser_parallel
+#from gph.python import ripser_parallel
+from ripser import ripser
+import gudhi
 
 import numpy as np
 import torch
@@ -54,7 +56,7 @@ def compute_diagram(data, maxdim, threshold, metric='L2', k=12, percentile=0.9, 
         # supress ripser warnings
         warnings.simplefilter("ignore")
         if metric == 'L2':
-            pd = ripser_parallel(X, maxdim=maxdim, thresh=threshold, n_threads=-1)['dgms']
+            pd = ripser(X, maxdim=maxdim, thresh=threshold, n_threads=-1)['dgms']
             if save_activations_plots is not None:
                 visualize.plot_activations(X, None, save=save_activations_plots)
         elif metric == 'GG' or metric == 'graph geodesic':
@@ -63,16 +65,16 @@ def compute_diagram(data, maxdim, threshold, metric='L2', k=12, percentile=0.9, 
             if save_activations_plots is not None:
                 visualize.plot_activations(X, adjacency_matrix, save=save_activations_plots)
 
-            pd = ripser_parallel(graph_geodesic_dm, maxdim=maxdim, thresh=threshold, metric='precomputed', n_threads=-1)['dgms']
+            pd = ripser(graph_geodesic_dm, maxdim=maxdim, thresh=threshold, metric='precomputed', n_threads=-1)['dgms']
         elif metric == 'SN' or metric == 'scale normalized':
             normalized_X = scale_normalize(X)
-            pd = ripser_parallel(normalized_X, maxdim=maxdim, thresh=threshold, n_threads=-1)['dgms']
+            pd = ripser(normalized_X, maxdim=maxdim, thresh=threshold, n_threads=-1)['dgms']
             if save_activations_plots is not None:
                 visualize.plot_activations(normalized_X, None, save=save_activations_plots)
 
         elif metric == 'MN' or metric == 'max normalized':
             normalized_X = scale_normalize(X, max=True)
-            pd = ripser_parallel(normalized_X, maxdim=maxdim, thresh=threshold, n_threads=-1)['dgms']
+            pd = ripser(normalized_X, maxdim=maxdim, thresh=threshold, n_threads=-1)['dgms']
             if save_activations_plots is not None:
                 visualize.plot_activations(normalized_X, None, save=save_activations_plots)
         
@@ -81,9 +83,9 @@ def compute_diagram(data, maxdim, threshold, metric='L2', k=12, percentile=0.9, 
             distance_matrix = scipy.spatial.distance_matrix(normalized_data, normalized_data)
             # Because we sorted the data, we just need to set the block beyond row and col = percentile_index to 0.
             if percentile_index < distance_matrix.shape[0]:
-                distance_matrix[percentile_index:, percentile_index:] = 0
+                distance_matrix[percentile_index:, percentile_index:] = 0.0
 
-            pd = ripser_parallel(distance_matrix, maxdim=maxdim, thresh=threshold, metric='precomputed', n_threads=-1)['dgms']
+            pd = ripser(distance_matrix, maxdim=maxdim, thresh=threshold, distance_matrix=True)['dgms']
             if save_activations_plots is not None:
                 visualize.plot_activations(X, None, save=save_activations_plots)
 
@@ -137,7 +139,11 @@ def percentile_normalize(data, percentile, center=None, p=2):
     distances = distances[argsort]
 
     percentile_index = int(distances.shape[0]*percentile) # index in translated_data where "outlier" region begins. 
-    normalized_data = data/distances[min(percentile_index, distances.shape[0]-1)]
+    percentile_distance = distances[min(percentile_index, distances.shape[0]-1)]
+    normalized_data = data/percentile_distance
+    normalized_data[percentile_index:] *= (percentile_distance/distances[percentile_index:])[:,None]
+
+    distances_new = np.linalg.norm(normalized_data, ord=p, axis=1)
 
     return normalized_data, percentile_index
 
