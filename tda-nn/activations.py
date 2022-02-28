@@ -41,14 +41,12 @@ if __name__=='__main__':
     def load_data(fname):
         if os.path.splitext(fname)[1] == '.npy':
             data_numpy = np.load(fname)
-            np.random.shuffle(data_numpy)
             data = torch.from_numpy(data_numpy).float()
         elif os.path.splitext(fname)[1] == '.csv':
             data_numpy = np.loadtxt(fname, delimiter=',')
-            np.random.shuffle(data_numpy)
             data = torch.from_numpy(data_numpy).float()
         else:
-            error("Error: invalid file extension {}, this script only support numpy datasets.".format(os.path.splitext(fname)[1]))
+            error("Error: invalid file extension {}, this script only support numpy or CSV datasets.".format(os.path.splitext(fname)[1]))
             quit()
 
         return data
@@ -75,8 +73,7 @@ if __name__=='__main__':
     if args.persistence_class != -1:
         class_data = data[data[:,-1]==args.persistence_class]
     else:
-        shuffle_idx = torch.randperm(data.shape[0])
-        class_data = data[shuffle_idx]
+        class_data = data
 
     final_data = class_data[:args.sample_count, :-1]
     classes = class_data[:args.sample_count, -1].unsqueeze(-1)

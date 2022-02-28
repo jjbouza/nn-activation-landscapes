@@ -72,7 +72,7 @@ def plot_landscape(landscapes, x_axis, ax):
     for level in landscapes:
         ax.plot(level)
 
-def plot_activations(data, adjacency_matrix, save=None):
+def plot_activations(data, adjacency_matrix, original_data, save=None):
     # run PCA on data
     plt.clf()
     pca = PCA(n_components=2)

@@ -3,7 +3,7 @@ import os
 
 #from gph.python import ripser_parallel
 from ripser import ripser
-import gudhi
+#import gudhi
 
 import numpy as np
 import torch
@@ -17,30 +17,25 @@ import resource
 
 from utils import *
 
-def compute_diagrams(data, maxdims, thresholds, metric='L2', k=12, percentiles=None, centers=None, save_activations_plots=None):
-    if save_activations_plots is not None:
-        if not os.path.exists(save_activations_plots):
-            os.makedirs(save_activations_plots)
+def compute_diagrams(data, maxdims, thresholds, metric='L2', k=12, percentiles=None, centers=None):
 
     center_list = [None for _ in maxdims] if centers is None else centers
     percentile_list = [None for _ in maxdims] if percentiles is None else percentiles
 
     diagrams = []
     for id, (activation, dim, threshold, center, percentile) in enumerate(zip(data, maxdims, thresholds, center_list, percentile_list)):
-        act_plot = None if save_activations_plots is None else os.path.join(save_activations_plots, 'layer{}.png'.format(id))
         diag = compute_diagram(activation, 
                                dim, 
                                threshold, 
                                metric=metric, 
                                k=k,
                                percentile=percentile,
-                               center=center,
-                               save_activations_plots=act_plot)
+                               center=center)
         diagrams.append(diag)
 
     return diagrams
 
-def compute_diagram(data, maxdim, threshold, metric='L2', k=12, percentile=0.9, center=None, save_activations_plots=None):
+def compute_diagram(data, maxdim, threshold, metric='L2', k=12, percentile=0.9, center=None):
     # compute and return diagram
     if isinstance(data, torch.Tensor):
         data_cpu = data.cpu().detach().numpy()
@@ -57,26 +52,19 @@ def compute_diagram(data, maxdim, threshold, metric='L2', k=12, percentile=0.9, 
         warnings.simplefilter("ignore")
         if metric == 'L2':
             pd = ripser(X, maxdim=maxdim, thresh=threshold, n_threads=-1)['dgms']
-            if save_activations_plots is not None:
-                visualize.plot_activations(X, None, save=save_activations_plots)
+
         elif metric == 'GG' or metric == 'graph geodesic':
             adjacency_matrix = graph_geodesic_adjacency(X, k)
             graph_geodesic_dm = graph_geodesic_metric(adjacency_matrix)
-            if save_activations_plots is not None:
-                visualize.plot_activations(X, adjacency_matrix, save=save_activations_plots)
 
             pd = ripser(graph_geodesic_dm, maxdim=maxdim, thresh=threshold, metric='precomputed', n_threads=-1)['dgms']
         elif metric == 'SN' or metric == 'scale normalized':
             normalized_X = scale_normalize(X)
             pd = ripser(normalized_X, maxdim=maxdim, thresh=threshold, n_threads=-1)['dgms']
-            if save_activations_plots is not None:
-                visualize.plot_activations(normalized_X, None, save=save_activations_plots)
 
         elif metric == 'MN' or metric == 'max normalized':
             normalized_X = scale_normalize(X, max=True)
             pd = ripser(normalized_X, maxdim=maxdim, thresh=threshold, n_threads=-1)['dgms']
-            if save_activations_plots is not None:
-                visualize.plot_activations(normalized_X, None, save=save_activations_plots)
         
         elif metric == 'PN' or metric == 'percentile normalized':
             normalized_data, percentile_index= percentile_normalize(X, percentile, center)
@@ -84,10 +72,7 @@ def compute_diagram(data, maxdim, threshold, metric='L2', k=12, percentile=0.9, 
             # Because we sorted the data, we just need to set the block beyond row and col = percentile_index to 0.
             if percentile_index < distance_matrix.shape[0]:
                 distance_matrix[percentile_index:, percentile_index:] = 0.0
-
-            pd = ripser(distance_matrix, maxdim=maxdim, thresh=threshold, distance_matrix=True)['dgms']
-            if save_activations_plots is not None:
-                visualize.plot_activations(X, None, save=save_activations_plots)
+            pd = ripser(distance_matrix, maxdim=maxdim, thresh=threshold, metric='precomputed')['dgms']
 
         else:
             error("Error: Unknown metric: ".format(metric))
@@ -181,7 +166,6 @@ if __name__ == '__main__':
     parser.add_argument('--nn-graph-k', type=int)
     parser.add_argument('--center', type=int, nargs='+', default=None)
     parser.add_argument('--percentile', type=float, nargs='+')
-    parser.add_argument('--save-diagram-plots', default=None)
     parser.add_argument('--output-dir', type=str)
 
     args = parser.parse_args()
@@ -196,6 +180,5 @@ if __name__ == '__main__':
                                 args.diagram_metric, 
                                 args.nn_graph_k, 
                                 args.percentile,
-                                center,
-                                args.save_diagram_plots)
+                                center)
     save_diagram(diagrams, args.output_dir)
