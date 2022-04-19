@@ -5,6 +5,7 @@ from skorch.net import NeuralNet
 from skorch import NeuralNetClassifier
 from skorch.callbacks import BatchScoring, EpochScoring, LRScheduler
 from train.callbacks import TrainingThreshold
+from train.losses import MSELossClassification, SphereLoss
 
 import os
 import sys
@@ -47,14 +48,9 @@ def train(model_fname,
                  training_threshold]
     
     if loss_fn == 'MSELoss':
-        class MSELossClassification(torch.nn.Module):
-            def __init__(self):
-                super().__init__()
-                self.MSE = torch.nn.MSELoss()
-            def forward(self, input, target):
-                target_ = torch.nn.functional.one_hot(target, input.shape[1]).float()
-                return self.MSE(input, target_)
         loss = MSELossClassification
+    elif loss_fn == 'SphereLoss':
+        loss = SphereLoss
     elif loss_fn == 'CrossEntropyLoss':
         loss = torch.nn.CrossEntropyLoss
     else:
