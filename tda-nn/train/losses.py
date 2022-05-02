@@ -20,8 +20,7 @@ class SphereLoss(torch.nn.Module):
         """
         Map x to hypersphere.
         """
-        y = torch.sqrt(torch.sum(x**2, dim=-1)[..., None])
-        x = x / (y+_EPS_)
+        y = torch.sqrt(torch.clamp(x, min=0))
         return x 
     
     def sphere_geodesic_distance(self, x, y):
