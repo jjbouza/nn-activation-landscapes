@@ -32,7 +32,7 @@ PER_TASK=1
 START_NUM=$(( ($SLURM_ARRAY_TASK_ID - 1) * $PER_TASK + 1 ))
 END_NUM=$(( $SLURM_ARRAY_TASK_ID * $PER_TASK ))
 
-TRAINING_THRESHOLDS="0.2 0.5 0.6 0.7 0.8 0.9 0.95"
+TRAINING_THRESHOLDS="0.2 0.5 0.6 0.7 0.8 0.9 0.95 0.99"
 
 # Print the task and run range
 echo This is task $SLURM_ARRAY_TASK_ID, which will do runs $START_NUM to $END_NUM
