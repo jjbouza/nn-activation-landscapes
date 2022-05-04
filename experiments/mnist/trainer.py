@@ -68,8 +68,10 @@ def train(model_fname,
         callbacks=callbacks,
         iterator_train__shuffle=True,
         device=device)
-
     net.set_params(callbacks__valid_acc=None)
+    model = net.initialize()
+    print(model)
+    print("Model parameter count: {}".format(sum(p.numel() for p in model.module_.parameters() if p.requires_grad)))
     net.fit(X=dataset, y=y_train)
 
     return net
