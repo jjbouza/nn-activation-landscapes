@@ -14,10 +14,11 @@ from sklearn.neighbors import NearestNeighbors
 import sklearn.utils.graph_shortest_path as gp
 import scipy.spatial
 import resource
+import distances
 
 from utils import *
 
-def compute_diagrams(data, maxdims, thresholds, metric='L2', k=12, percentiles=None, centers=None):
+def compute_diagrams(data, maxdims, thresholds, metric='L2', k=12, percentiles=None, centers=None, distance=None):
 
     center_list = [None for _ in maxdims] if centers is None else centers
     percentile_list = [None for _ in maxdims] if percentiles is None else percentiles
@@ -30,12 +31,13 @@ def compute_diagrams(data, maxdims, thresholds, metric='L2', k=12, percentiles=N
                                metric=metric, 
                                k=k,
                                percentile=percentile,
-                               center=center)
+                               center=center,
+                               distance=distance)
         diagrams.append(diag)
 
     return diagrams
 
-def compute_diagram(data, maxdim, threshold, metric='L2', k=12, percentile=0.9, center=None):
+def compute_diagram(data, maxdim, threshold, metric='L2', k=12, percentile=0.9, center=None, distance=None):
     # compute and return diagram
     if isinstance(data, torch.Tensor):
         data_cpu = data.cpu().detach().numpy()
@@ -44,6 +46,15 @@ def compute_diagram(data, maxdim, threshold, metric='L2', k=12, percentile=0.9, 
     else:
         error("Unsupported data type: {} for compute_diagram".format(type(data)))
         quit()
+    if distance and (metric != 'PN' and metric != 'percentile normalized'):
+        raise ValueError("Custom distance metric only supported with PN metric.")
+
+    if distance is None:
+        _distance = lambda u, v: np.sqrt(((u-v)**2).sum()) # euclidean distance
+    elif distance == 'SphereDistance':
+        _distance = distances.sphere_distance
+    else:
+        raise ValueError("Unsupported distance metric.")
 
     X = data_cpu.reshape(data.shape[0], -1)
 
@@ -68,7 +79,7 @@ def compute_diagram(data, maxdim, threshold, metric='L2', k=12, percentile=0.9, 
         
         elif metric == 'PN' or metric == 'percentile normalized':
             normalized_data, percentile_index= percentile_normalize(X, percentile, center)
-            distance_matrix = scipy.spatial.distance_matrix(normalized_data, normalized_data)
+            distance_matrix = scipy.spatial.distance.squareform(scipy.spatial.distance.pdist(normalized_data, metric=_distance))
             # Because we sorted the data, we just need to set the block beyond row and col = percentile_index to 0.
             if percentile_index < distance_matrix.shape[0]:
                 distance_matrix[percentile_index:, percentile_index:] = 0.0
@@ -164,6 +175,7 @@ if __name__ == '__main__':
     parser.add_argument('--persistence-layers', type=int, nargs='+')
     parser.add_argument('--diagram-metric', type=str)
     parser.add_argument('--nn-graph-k', type=int)
+    parser.add_argument('--diagram-distance-function', type=str)
     parser.add_argument('--center', type=int, nargs='+', default=None)
     parser.add_argument('--percentile', type=float, nargs='+')
     parser.add_argument('--output-dir', type=str)
@@ -180,5 +192,6 @@ if __name__ == '__main__':
                                 args.diagram_metric, 
                                 args.nn_graph_k, 
                                 args.percentile,
-                                center)
+                                center,
+                                args.diagram_distance_function)
     save_diagram(diagrams, args.output_dir)
