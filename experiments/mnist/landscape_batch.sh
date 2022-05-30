@@ -84,8 +84,8 @@ for (( run=$START_NUM; run<=END_NUM; run++ )); do
             --max-diagram-dimension 1 1 1 1 1 1 1 1 \
             --diagram-threshold 100000 100000 100000 100000 100000 100000 100000 100000 \
             --persistence-layers 0 1 2 3 4 5 6 7\
-            --metric L2 \
-            --metric-normalization percentile \
+            --metric SphereDistance \
+            --metric-normalization identity \
             --output-dir $OUTPUT_FOLDER/diagrams/ \
 
         echo Starting diagram plotting for network ${run} and threshold ${thresh}.
