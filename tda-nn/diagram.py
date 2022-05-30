@@ -18,7 +18,7 @@ import distances
 
 from utils import *
 
-def compute_diagrams(data, maxdims, thresholds, metric='L2', k=12, percentiles=None, centers=None, distance=None):
+def compute_diagrams(data, maxdims, thresholds, normalization='identity', metric='L2', k=12, percentiles=None, centers=None):
 
     center_list = [None for _ in maxdims] if centers is None else centers
     percentile_list = [None for _ in maxdims] if percentiles is None else percentiles
@@ -28,16 +28,16 @@ def compute_diagrams(data, maxdims, thresholds, metric='L2', k=12, percentiles=N
         diag = compute_diagram(activation, 
                                dim, 
                                threshold, 
+                               normalization=normalization,
                                metric=metric, 
                                k=k,
                                percentile=percentile,
-                               center=center,
-                               distance=distance)
+                               center=center)
         diagrams.append(diag)
 
     return diagrams
 
-def compute_diagram(data, maxdim, threshold, metric='L2', k=12, percentile=0.9, center=None, distance=None):
+def compute_diagram(data, maxdim, threshold, normalization='identity', metric='L2', k=12, percentile=0.9, center=None):
     # compute and return diagram
     if isinstance(data, torch.Tensor):
         data_cpu = data.cpu().detach().numpy()
@@ -46,13 +46,13 @@ def compute_diagram(data, maxdim, threshold, metric='L2', k=12, percentile=0.9, 
     else:
         error("Unsupported data type: {} for compute_diagram".format(type(data)))
         quit()
-    if distance and (metric != 'PN' and metric != 'percentile normalized'):
-        raise ValueError("Custom distance metric only supported with PN metric.")
 
-    if distance is None:
+    if metric == 'L2' or metric is None:
         _distance = lambda u, v: np.sqrt(((u-v)**2).sum()) # euclidean distance
-    elif distance == 'SphereDistance':
+    elif metric == 'SphereDistance':
         _distance = distances.sphere_distance
+    elif metric == 'graph-geodesic' or metric == 'graph geodesic' or metric == 'GG':
+        pass
     else:
         raise ValueError("Unsupported distance metric.")
 
@@ -61,24 +61,17 @@ def compute_diagram(data, maxdim, threshold, metric='L2', k=12, percentile=0.9, 
     with warnings.catch_warnings():
         # supress ripser warnings
         warnings.simplefilter("ignore")
-        if metric == 'L2':
-            pd = ripser(X, maxdim=maxdim, thresh=threshold, n_threads=-1)['dgms']
-
-        elif metric == 'GG' or metric == 'graph geodesic':
-            adjacency_matrix = graph_geodesic_adjacency(X, k)
-            graph_geodesic_dm = graph_geodesic_metric(adjacency_matrix)
-
-            pd = ripser(graph_geodesic_dm, maxdim=maxdim, thresh=threshold, metric='precomputed', n_threads=-1)['dgms']
-        elif metric == 'SN' or metric == 'scale normalized':
-            normalized_X = scale_normalize(X)
-            pd = ripser(normalized_X, maxdim=maxdim, thresh=threshold, n_threads=-1)['dgms']
-
-        elif metric == 'MN' or metric == 'max normalized':
-            normalized_X = scale_normalize(X, max=True)
-            pd = ripser(normalized_X, maxdim=maxdim, thresh=threshold, n_threads=-1)['dgms']
-        
-        elif metric == 'PN' or metric == 'percentile normalized':
-            normalized_data, percentile_index= percentile_normalize(X, percentile, center)
+        if normalization == 'identity':
+            if metric == 'graph-geodesic' or metric == 'graph geodesic' or metric == 'GG':
+                adjacency_matrix = graph_geodesic_adjacency(X, k)
+                graph_geodesic_dm = graph_geodesic_metric(adjacency_matrix)
+                pd = ripser(graph_geodesic_dm, maxdim=maxdim, thresh=threshold, metric='precomputed', n_threads=-1)['dgms']
+            else:
+                distance_matrix = scipy.spatial.distance.squareform(scipy.spatial.distance.pdist(X, metric=_distance))
+                pd = ripser(distance_matrix, maxdim=maxdim, thresh=threshold, metric='precomputed')['dgms']
+        elif normalization == 'percentile':
+            assert metric == 'L2', "Only L2 metric supported with percentile normalization"
+            normalized_data, percentile_index = percentile_normalize(X, percentile, center)
             distance_matrix = scipy.spatial.distance.squareform(scipy.spatial.distance.pdist(normalized_data, metric=_distance))
             # Because we sorted the data, we just need to set the block beyond row and col = percentile_index to 0.
             if percentile_index < distance_matrix.shape[0]:
@@ -106,22 +99,6 @@ def graph_geodesic_metric(adjacency_matrix):
     np.fill_diagonal(distance_matrix, 0)
 
     return distance_matrix
-
-def scale_normalize(data, p=2, max=False):
-    translated_data = data-np.mean(data, axis=0)
-    distance_matrix = scipy.spatial.distance_matrix(translated_data, translated_data, p)
-    
-    if max:
-        scale = np.max(distance_matrix)
-    else:
-        scale = np.mean(distance_matrix)
-
-    if scale == 0:
-        normalized_data = translated_data
-    else:
-        normalized_data = translated_data/scale
-
-    return normalized_data
 
 def percentile_normalize(data, percentile, center=None, p=2):
     if center:
@@ -173,9 +150,9 @@ if __name__ == '__main__':
     parser.add_argument('--max-diagram-dimension', type=int, nargs='+')
     parser.add_argument('--diagram-threshold', type=float, nargs='+')
     parser.add_argument('--persistence-layers', type=int, nargs='+')
-    parser.add_argument('--diagram-metric', type=str)
+    parser.add_argument('--metric-normalization', type=str)
+    parser.add_argument('--metric', type=str)
     parser.add_argument('--nn-graph-k', type=int)
-    parser.add_argument('--diagram-distance-function', type=str)
     parser.add_argument('--center', type=int, nargs='+', default=None)
     parser.add_argument('--percentile', type=float, nargs='+')
     parser.add_argument('--output-dir', type=str)
@@ -189,9 +166,10 @@ if __name__ == '__main__':
     diagrams = compute_diagrams(data, 
                                 args.max_diagram_dimension, 
                                 args.diagram_threshold, 
-                                args.diagram_metric, 
+                                args.metric_normalization,
+                                args.metric, 
                                 args.nn_graph_k, 
                                 args.percentile,
-                                center,
-                                args.diagram_distance_function)
+                                center
+                                )
     save_diagram(diagrams, args.output_dir)

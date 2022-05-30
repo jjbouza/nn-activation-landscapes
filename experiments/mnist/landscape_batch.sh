@@ -54,7 +54,7 @@ for (( run=$START_NUM; run<=END_NUM; run++ )); do
             --input_data ./data/mnist.csv \
             --persistence-class -1 \
             --keep_class \
-            --sample-count 1500 \
+            --sample-count 100 \
             --layers 0 1 2 3 4 5 6 7\
             --output_dir $OUTPUT_FOLDER/activations_class/ \
             --models_dir /blue/bubenik/josebouza/Projects/tda-nn/experiments/mnist/model/
@@ -65,7 +65,7 @@ for (( run=$START_NUM; run<=END_NUM; run++ )); do
             --input_data ./data/mnist.csv \
             --persistence-class -1 \
             --do_softmax \
-            --sample-count 1500 \
+            --sample-count 100 \
             --layers 0 1 2 3 4 5 6 7\
             --output_dir $OUTPUT_FOLDER/activations/ \
             --models_dir /blue/bubenik/josebouza/Projects/tda-nn/experiments/mnist/model/
@@ -84,9 +84,8 @@ for (( run=$START_NUM; run<=END_NUM; run++ )); do
             --max-diagram-dimension 1 1 1 1 1 1 1 1 \
             --diagram-threshold 100000 100000 100000 100000 100000 100000 100000 100000 \
             --persistence-layers 0 1 2 3 4 5 6 7\
-            --diagram-metric PN \
-            --diagram-distance-function SphereDistance \
-            --percentile 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 \
+            --metric L2 \
+            --metric-normalization percentile \
             --output-dir $OUTPUT_FOLDER/diagrams/ \
 
         echo Starting diagram plotting for network ${run} and threshold ${thresh}.
